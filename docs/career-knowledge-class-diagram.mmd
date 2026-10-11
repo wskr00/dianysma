@@ -1,0 +1,207 @@
+classDiagram
+    direction LR
+
+    class Profile {
+        +UUID id
+        +String fullName
+        +String email
+        +String phone
+        +String city
+        +String state
+        +String countryCode
+        +String linkedinUrl
+        +String githubUrl
+        +String portfolioUrl
+        +String summary
+        +OffsetDateTime createdAt
+        +OffsetDateTime updatedAt
+    }
+
+    class Organization {
+        +UUID id
+        +String name
+        +String legalName
+        +OrganizationType type
+        +String description
+        +OffsetDateTime createdAt
+        +OffsetDateTime updatedAt
+    }
+
+    class Experience {
+        +UUID id
+        +UUID employerId
+        +UUID clientId
+        +String role
+        +EmploymentType employmentType
+        +String description
+        +LocalDate startedAt
+        +LocalDate endedAt
+        +OffsetDateTime createdAt
+        +OffsetDateTime updatedAt
+    }
+
+    class Project {
+        +UUID id
+        +UUID organizationId
+        +String name
+        +String description
+        +OffsetDateTime createdAt
+        +OffsetDateTime updatedAt
+    }
+
+    class Participation {
+        +UUID id
+        +UUID experienceId
+        +UUID projectId
+        +String description
+        +OffsetDateTime createdAt
+        +OffsetDateTime updatedAt
+    }
+
+    class Claim {
+        +UUID id
+        +UUID participationId
+        +String content
+        +OffsetDateTime createdAt
+        +OffsetDateTime updatedAt
+    }
+
+    class Skill {
+        +UUID id
+        +String name
+        +SkillCategory category
+        +String[] aliases
+        +OffsetDateTime createdAt
+        +OffsetDateTime updatedAt
+    }
+
+    class ClaimSkill {
+        +UUID claimId
+        +UUID skillId
+    }
+
+    class Education {
+        +UUID id
+        +String institution
+        +EducationType type
+        +String title
+        +String degree
+        +String description
+        +Integer workloadHours
+        +LocalDate startedAt
+        +LocalDate completedAt
+        +Boolean expected
+        +OffsetDateTime createdAt
+        +OffsetDateTime updatedAt
+    }
+
+    class Language {
+        +UUID id
+        +String name
+        +String proficiency
+        +String description
+        +OffsetDateTime createdAt
+        +OffsetDateTime updatedAt
+    }
+
+    class VectorDocument {
+        <<SpringAI>>
+        +UUID id
+        +String content
+        +Map metadata
+        +Vector embedding
+    }
+
+    class KnowledgeChunk {
+        <<JPA>>
+        +UUID id
+        +UUID participationId
+        +UUID claimId
+        +UUID educationId
+        +String hash
+        +String model
+        +OffsetDateTime indexedAt
+    }
+
+    class KnowledgeVectorStore {
+        <<Service>>
+        +add(KnowledgeDocument)
+        +search(String)
+        +delete(UUID)
+    }
+
+    class PgVectorStore {
+        <<SpringAIAdapter>>
+        +add(List~Document~)
+        +similaritySearch(SearchRequest)
+        +delete(List~String~)
+    }
+
+    class KnowledgeChunkRepository {
+        <<Repository>>
+        +save(KnowledgeChunk)
+        +findById(UUID)
+        +findByIds(List~UUID~)
+        +deleteById(UUID)
+    }
+
+    class OrganizationType {
+        <<enumeration>>
+        COMPANY
+        PUBLIC_INSTITUTION
+        EDUCATION
+        OTHER
+    }
+
+    class EmploymentType {
+        <<enumeration>>
+        EMPLOYEE
+        INTERNSHIP
+        CONTRACTOR
+        OTHER
+    }
+
+    class SkillCategory {
+        <<enumeration>>
+        LANGUAGE
+        FRAMEWORK
+        DATABASE
+        TOOL
+        CONCEPT
+        OTHER
+    }
+
+    class EducationType {
+        <<enumeration>>
+        DEGREE
+        COURSE
+        CERTIFICATION
+    }
+
+    Organization "1" <-- "0..*" Experience : employer
+    Organization "0..1" <-- "0..*" Experience : client
+    Organization "0..1" <-- "0..*" Project : context
+
+    Experience "0..1" <-- "0..*" Participation : experience
+    Project "0..1" <-- "0..*" Participation : project
+    Participation "0..1" <-- "0..*" Claim : context
+
+    Claim "1" <-- "0..*" ClaimSkill : claim
+    Skill "1" <-- "0..*" ClaimSkill : skill
+
+    Participation "0..1" <-- "0..*" KnowledgeChunk : source
+    Claim "0..1" <-- "0..*" KnowledgeChunk : source
+    Education "0..1" <-- "0..*" KnowledgeChunk : source
+    VectorDocument "1" <-- "1" KnowledgeChunk : shared id PK FK
+
+    KnowledgeVectorStore ..> PgVectorStore : delegates vectors
+    KnowledgeVectorStore ..> KnowledgeChunkRepository : manages FKs
+    PgVectorStore ..> VectorDocument : persists and searches
+    KnowledgeChunkRepository ..> KnowledgeChunk : persists and loads
+
+    note for Participation "At least one FK: experienceId or projectId. The pair must be unique, including NULLs."
+    note for Claim "participationId is optional: standalone claims are allowed."
+    note for KnowledgeChunk "Exactly one FK to a source. id is PK and FK to vector_store.id."
+    note for VectorDocument "Spring AI schema: id, content, metadata, embedding."
+    note for Profile "Single record per personal instance."
+

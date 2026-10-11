@@ -1,0 +1,84 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Node.js / Angular
+**/node_modules/
+**/dist/
+**/.angular/
+**/coverage/
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/venv/
+**/.pytest_cache/
+
+# Gradle / Java
+HELP.md
+**/.gradle/
+**/build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+!app/gradle/wrapper/gradle-wrapper.jar
+
+# Spring Tool Suite / Eclipse
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+**/bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# NetBeans
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# Editors and operating systems
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# Additional webapp outputs and tool files (formerly webapp/.gitignore)
+webapp/tmp/
+webapp/out-tsc/
+webapp/bazel-out/
+webapp/**/npm-debug.log
+webapp/**/yarn-error.log
+webapp/**/.c9/
+webapp/**/*.launch
+webapp/**/*.sublime-workspace
+webapp/**/.history/*
+webapp/**/.sass-cache/
+webapp/connect.lock
+webapp/**/libpeerconnection.log
+webapp/**/testem.log
+webapp/typings/
+webapp/**/__screenshots__/
+
+# Keep selected webapp VS Code settings under version control
+!webapp/.vscode/
+webapp/.vscode/*
+!webapp/.vscode/settings.json
+!webapp/.vscode/tasks.json
+!webapp/.vscode/launch.json
+!webapp/.vscode/extensions.json
+!webapp/.vscode/mcp.json
