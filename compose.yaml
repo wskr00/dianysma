@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg18-trixie
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-dianysma}
+      POSTGRES_USER: ${DATABASE_USER:-dianysma}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-dianysma}
+    ports:
+      - "${DATABASE_HOST:-127.0.0.1}:${DATABASE_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./docker/postgres:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  postgres_data:

@@ -1,7 +1,29 @@
 spring:
+    config:
+        import: "optional:file:../.env[.properties]"
+    datasource:
+        url: "jdbc:postgresql://${DATABASE_HOST:127.0.0.1}:${DATABASE_PORT:5432}/${DATABASE_NAME:dianysma}"
+        username: ${DATABASE_USER:dianysma}
+        password: ${DATABASE_PASSWORD:dianysma}
+    jpa:
+        hibernate:
+            ddl-auto: validate
     application:
         name: dianysma
     ai:
+        google:
+            genai:
+                embedding:
+                    api-key: ${GEMINI_API_KEY:}
+                    text:
+                        model: gemini-embedding-2
+                        dimensions: 1536
+        vectorstore:
+            pgvector:
+                dimensions: 1536
+                distance-type: COSINE_DISTANCE
+                index-type: HNSW
+                initialize-schema: false
         mcp:
             server:
                 protocol: STREAMABLE

@@ -3,16 +3,15 @@ classDiagram
 
     class Profile {
         +UUID id
-        +String fullName
+        +String name
         +String email
-        +String phone
+        +Long phone
         +String city
         +String state
-        +String countryCode
+        +String country
         +String linkedinUrl
         +String githubUrl
         +String portfolioUrl
-        +String summary
         +OffsetDateTime createdAt
         +OffsetDateTime updatedAt
     }
@@ -20,9 +19,6 @@ classDiagram
     class Organization {
         +UUID id
         +String name
-        +String legalName
-        +OrganizationType type
-        +String description
         +OffsetDateTime createdAt
         +OffsetDateTime updatedAt
     }
@@ -32,7 +28,7 @@ classDiagram
         +UUID employerId
         +UUID clientId
         +String role
-        +EmploymentType employmentType
+        +String employmentType
         +String description
         +LocalDate startedAt
         +LocalDate endedAt
@@ -69,15 +65,9 @@ classDiagram
     class Skill {
         +UUID id
         +String name
-        +SkillCategory category
         +String[] aliases
         +OffsetDateTime createdAt
         +OffsetDateTime updatedAt
-    }
-
-    class ClaimSkill {
-        +UUID claimId
-        +UUID skillId
     }
 
     class Education {
@@ -97,9 +87,9 @@ classDiagram
 
     class Language {
         +UUID id
+        +UUID profileId
         +String name
-        +String proficiency
-        +String description
+        +LanguageProficiency proficiency
         +OffsetDateTime createdAt
         +OffsetDateTime updatedAt
     }
@@ -145,30 +135,13 @@ classDiagram
         +deleteById(UUID)
     }
 
-    class OrganizationType {
+    class LanguageProficiency {
         <<enumeration>>
-        COMPANY
-        PUBLIC_INSTITUTION
-        EDUCATION
-        OTHER
-    }
-
-    class EmploymentType {
-        <<enumeration>>
-        EMPLOYEE
-        INTERNSHIP
-        CONTRACTOR
-        OTHER
-    }
-
-    class SkillCategory {
-        <<enumeration>>
-        LANGUAGE
-        FRAMEWORK
-        DATABASE
-        TOOL
-        CONCEPT
-        OTHER
+        BASIC
+        INTERMEDIATE
+        ADVANCED
+        FLUENT
+        NATIVE
     }
 
     class EducationType {
@@ -181,13 +154,13 @@ classDiagram
     Organization "1" <-- "0..*" Experience : employer
     Organization "0..1" <-- "0..*" Experience : client
     Organization "0..1" <-- "0..*" Project : context
+    Profile "1" <-- "0..*" Language : languages
 
     Experience "0..1" <-- "0..*" Participation : experience
     Project "0..1" <-- "0..*" Participation : project
     Participation "0..1" <-- "0..*" Claim : context
 
-    Claim "1" <-- "0..*" ClaimSkill : claim
-    Skill "1" <-- "0..*" ClaimSkill : skill
+    Claim "0..*" <-- "0..*" Skill : skills
 
     Participation "0..1" <-- "0..*" KnowledgeChunk : source
     Claim "0..1" <-- "0..*" KnowledgeChunk : source

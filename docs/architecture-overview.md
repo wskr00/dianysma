@@ -126,13 +126,13 @@ Entidades e modelagem detalhada: [`Career Knowledge/career-knowledge-class-diagr
 - **Organization, Experience, Project:** organizações, vínculos (empregador/cliente) e projetos reutilizáveis.
 - **Participation:** contexto de uma atuação; pode apontar para uma experiência, um projeto ou ambos, exigindo pelo menos uma relação.
 - **Claim:** afirmação factual, com `participationId` opcional; pode existir independentemente.
-- **Skill + ClaimSkill:** competências e associação N com Claims; ClaimSkill não possui embedding próprio.
+- **Skill:** competências associadas a Claims por uma relação N:N; a tabela de junção `claim_skill` não possui embedding próprio.
 - **Education, Language:** formação, cursos, certificações e idiomas.
 - **VectorDocument (`vector_store`):** tabela técnica padronizada do Spring AI `PgVectorStore`, com `id`, `content`, `metadata` e `embedding`. Contém texto contextualizado e vetor derivado.
 - **KnowledgeChunk (`knowledge_chunk`):** tabela técnica relacional separada, com `id` (PK e FK 1:1 para `vector_store.id`), `participationId`, `claimId`, `educationId`, `hash`, `model` e `indexedAt`. Exige exatamente **uma** FK de origem; mantém integridade referencial real, inclusive para Claims independentes da Participation.
 - **KnowledgeVectorStore:** fachada/serviço por **composição**: usa o `PgVectorStore` para embeddings e similaridade e um `KnowledgeChunkRepository` JPA para persistir as FKs e recuperar contexto. Nenhuma herança de `PgVectorStore` nem reimplementação das operações vetoriais.
 
-**Estratégia vetorial:** indexar Participation e Claim, e Education quando útil. Textos dos documentos incluem contexto derivado por relações SQL (organizações, experiências, projetos e skills), mas o `KnowledgeChunk` referencia uma única entidade de origem. `PgVectorStore` executa `add`/`similaritySearch`; o serviço recupera `KnowledgeChunk` por ID e percorre seus relacionamentos. Manter busca textual como complemento para nomes e versões exatos. `hash` identifica o conteúdo indexado e `model` permite identificar mudanças do modelo. A dimensão será fixada após a escolha do modelo de embeddings; reindexação deve ser idempotente e sobreviver ao scale-to-zero.
+**Estratégia vetorial:** indexar Participation e Claim, e Education quando útil. Textos dos documentos incluem contexto derivado por relações SQL (organizações, experiências, projetos e skills), mas o `KnowledgeChunk` referencia uma única entidade de origem. `PgVectorStore` executa `add`/`similaritySearch`; o serviço recupera `KnowledgeChunk` por ID e percorre seus relacionamentos. Manter busca textual como complemento para nomes e versões exatos. `hash` identifica o conteúdo indexado e `model` permite identificar mudanças do modelo. Usar Gemini Embedding 2 a 1536 dimensões; qualquer mudança de modelo ou dimensão exige reindexação completa e idempotente, que deve sobreviver ao scale-to-zero.
 
 ### 3.1.1 Composição e persistência de embeddings
 
@@ -151,7 +151,7 @@ flowchart TB
 
 **Leitura:** `similaritySearch(query)` retorna documentos com ID. Buscar os `KnowledgeChunk` correspondentes em lote para obter as FKs e carregar o contexto relacional. A coluna `metadata` da `vector_store` não substitui essas FKs.
 
-**Schema:** o Flyway cria ambas as tabelas e suas constraints, com `vector_store` compatível com Spring AI e `initialize-schema=false`. Apagar fontes de domínio exige também limpar o índice; `knowledge_chunk` é derivado. Não existem colunas geradas por JSON nem uma segunda cópia de `content` e `embedding` na tabela relacional.
+**Schema:** o Flyway cria ambas as tabelas e suas constraints, com `vector_store` compatível com Spring AI e `initialize-schema=false`. A relação 1:1 é uma FK no PostgreSQL baseada no `id` compartilhado; `vector_store` não é uma entidade JPA porque `PgVectorStore` a acessa via JDBC. O modelo escolhido é Gemini Embedding 2 com 1536 dimensões; `vector_store.embedding` usa `vector(1536)` e índice HNSW com distância cosseno. O texto de documentos e consultas deve usar os prefixos de tarefa de retrieval recomendados pelo Gemini Embedding 2. Apagar fontes de domínio exige também limpar o índice; `knowledge_chunk` é derivado. Não existem colunas geradas por JSON nem uma segunda cópia de `content` e `embedding` na tabela relacional.
 
 ### 3.2 Job Discovery
 
@@ -363,7 +363,7 @@ Estes itens **não** estão fechados e não devem ser tratados como implementado
 1. Nomes, contratos e paginação das ferramentas MCP de leitura/escrita, busca e consulta de vagas.
 2. Provedor e política de autenticação para REST/MCP remoto, compatível com os clientes-alvo.
 3. Suporte real de cada cliente ao carregamento de skills e à execução do script de geração do PDF.
-4. Escolha definitiva do modelo/dimensão de embeddings e estratégia de reindexação persistente e retry; **o uso de PgVectorStore por composição e duas tabelas está decidido**.
+4. Definir estratégia de reindexação persistente e retry; **Gemini Embedding 2 a 1536 dimensões, PgVectorStore por composição e duas tabelas estão decididos**.
 5. Implementação robusta e permitida do código de coleta local inspirado no JobSpy, cobertura real de cada plataforma, limites/retenção de `rawData JSONB` e comportamento de execução independente quando suportado pelo agente.
 6. Estratégia de merge conservador de anúncios equivalentes, tratamento de divergências e correção manual.
 7. Definição exata de formatos do JSON do currículo e do template Typst da skill.
