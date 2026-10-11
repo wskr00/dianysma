@@ -34,4 +34,8 @@ public abstract class Auditable {
 	@UpdateTimestamp
 	@Column(name = "updated_at", nullable = false)
 	private OffsetDateTime updatedAt;
+
+	protected final void touch() {
+		this.updatedAt = OffsetDateTime.now();
+	}
 }

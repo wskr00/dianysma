@@ -60,7 +60,7 @@ flowchart LR
     RESUME --> PDF
 
     COLLECT -->|"pesquisa"| SOURCES
-    COLLECT -->|"GET pesquisas + POST lotes JSON/HTTPS"| REST
+    COLLECT -->|"POST lotes JSON/HTTPS"| REST
     REST --> CK
     REST --> JD
     MCP --> CK
@@ -81,7 +81,7 @@ flowchart LR
 
 | Elemento                         | Responsabilidade                                                                                                           | Não é responsável por                                          |
 | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| **Frontend Angular**             | Listar/consultar vagas, buscas e dados profissionais; operações manuais via REST                                           | Gerar PDF ou executar a skill                                  |
+| **Frontend Angular**             | Buscar/consultar vagas e dados profissionais; operações manuais via REST                                           | Gerar PDF ou executar a skill                                  |
 | **Backend Spring Boot Native**   | Disponibilizar REST/MCP; validar regras de domínio; pesquisar e persistir dados                                            | Redigir currículo; hospedar PDF; executar a skill              |
 | **Career Knowledge**             | Manter fatos profissionais e projeções vetoriais pesquisáveis                                                              | Matching automático de vagas                                   |
 | **Job Discovery**                | Ingestão de anúncios coletados localmente, extração assistida por LLM, deduplicação e consulta                                                         | Selecionar vagas para o usuário                                |
@@ -155,18 +155,13 @@ flowchart TB
 
 ### 3.2 Job Discovery
 
-Entidades e modelagem detalhada: [`Job Discovery/job-discovery-class-diagram.md`](Job%20Discovery/job-discovery-class-diagram.md).
+Entidades e modelagem detalhada: [Job Discovery/job-discovery-class-diagram.md](Job%20Discovery/job-discovery-class-diagram.md).
 
-- **Job:** oportunidade canônica consolidada.
-- **JobRequirements, JobCompensation, JobLocation:** dados satélites 1:1 e opcionais; requisitos/benefícios armazenados como listas de strings.
-- **JobPosting:** publicação individual identificada por portal de origem e URL normalizada, com **`rawData` (`raw_data JSONB`)** contendo os dados enviados pelo coletor e `processingStatus` (`PENDING`, `COMPLETED`, `FAILED`). `jobId` é opcional até associação. Não há necessidade de HTML bruto em Object Storage no MVP.
-- **JobSearch:** busca textual por palavras-chave e país (Brasil como padrão), com **`lookbackHours = 24` por padrão** e flag de habilitação. Pode ser consultada pelo script local via REST.
-- **CollectionRun:** execução local de uma `JobSearch` em **um portal de origem** (`LINKEDIN`, `INDEED`, `GLASSDOOR`), recebida e registrada pelo backend, com horários e status global, sem contadores persistidos. Reenvios usam o mesmo ID de execução.
-- **CollectionRunPosting:** tabela associativa N `(collectionRunId, jobPostingId)`; fatos observados que permitem calcular por SQL quantos anúncios apareceram, quais são inéditos e quais reapareceram.
-
-**Deduplicação são dois conceitos diferentes:** a mesma publicação aparecendo em mais de uma execução (N CollectionRun↔JobPosting) e diferentes publicações representando a mesma vaga (vários JobPosting→um Job). A IA auxilia a segunda identificação, primeiro filtrando candidatos com identificadores/URL, empresa e texto; incerteza não deve provocar fusão irreversível.
-
-**Estado de coleta:** `CollectionRun.status` descreve a execução local; `JobPosting.processingStatus` descreve extração e associação no backend. O desenho atual não registra tentativas que falharam antes de existir um JobPosting; para esse caso, usar logs ou estender o modelo futuramente. `CollectionRunPosting` continua sendo a tabela associativa N:N entre runs e anúncios.
+- **Job:** oportunidade canônica consolidada. Publicações equivalentes de provedores distintos podem apontar para o mesmo `Job`.
+- **JobRequirements, JobCompensation, JobLocation:** tabelas satélites 1:1 opcionais de `Job`, com `job_id` compartilhado como PK/FK para `Job.id`. Requisitos e benefícios são listas. A remuneração guarda `salary` como texto e `salaryPeriod` como enum, com padrão `MONTHLY` e nulo quando desconhecido.
+- **JobPosting:** anúncio específico de um provedor, identificado por `(provider, normalizedUrl)`. Guarda `rawData` (JSONB), `publishedAt` e os timestamps de auditoria. Cada anúncio pertence a um `Job`; um `Job` pode ter anúncios de vários provedores. O banco garante unicidade por provedor e URL normalizada.
+- O mesmo anúncio reaparecendo em coletas futuras atualiza o registro existente e `updatedAt`, mesmo se os demais dados não mudarem. Anúncios distintos de provedores diferentes podem apontar para o mesmo `Job`.
+- O domínio não mantém entidade de execução, associação de anúncio com execução nem status de coleta ou de processamento. O script trata as falhas de coleta no cliente; a API devolve erros de ingestão para o cliente.
 
 ## 4. Skill cliente — Dianysma
 
@@ -191,12 +186,12 @@ skills/
         └── resume.typ
 ```
 
-O `SKILL.md` ensina o agente quais ferramentas MCP usar, como consultar vagas, como cadastrar e atualizar fatos profissionais, como interpretar os relacionamentos, e como selecionar Claims reais ao preparar um currículo. O script `render_resume.py` e o template local geram o PDF a partir de JSON estruturado. O **`collect_jobs.py`** integra, dentro da própria skill, as rotinas necessárias inspiradas no JobSpy para LinkedIn, Indeed e Glassdoor, com a licença aplicável preservada: é executado pelo agente no computador do usuário, consulta as buscas habilitadas pela API, coleta anúncios das últimas 24 horas e envia os dados por HTTPS. Não é um serviço nem requer timer ou systemd. O formato de instalação e a disponibilidade de execução de scripts dependem do cliente de agente; um cliente sem execução local de scripts não oferecerá necessariamente a geração de PDF.
+O `SKILL.md` ensina o agente quais ferramentas MCP usar, como consultar vagas, como cadastrar e atualizar fatos profissionais, como interpretar os relacionamentos, e como selecionar Claims reais ao preparar um currículo. O script `render_resume.py` e o template local geram o PDF a partir de JSON estruturado. O **`collect_jobs.py`** integra, dentro da própria skill, as rotinas necessárias inspiradas no JobSpy para LinkedIn, Indeed e Glassdoor, com a licença aplicável preservada: é executado pelo agente no computador do usuário, recebe os parâmetros da solicitação do usuário, coleta anúncios das últimas 24 horas e envia os dados por HTTPS. Não é um serviço nem requer timer ou systemd. O formato de instalação e a disponibilidade de execução de scripts dependem do cliente de agente; um cliente sem execução local de scripts não oferecerá necessariamente a geração de PDF.
 
 **Fluxos orientados pela skill:**
 
 1. **Coletar vagas:** quando solicitado pelo usuário, executar `scripts/collect_jobs.py`, que consulta os portais e envia lotes JSON para a API REST, sem abrir porta local.
-2. **Explorar vagas:** listar pesquisas/vagas, consultar uma oportunidade selecionada e abrir URLs de publicação.
+2. **Explorar vagas:** filtrar e listar vagas, consultar uma oportunidade selecionada e abrir URLs de publicação.
 3. **Gerenciar conhecimento:** consultar detalhes, pesquisar semanticamente, adicionar/alterar experiências, participações e Claims via MCP; alterações devem respeitar integridade e evitar invenção de fatos.
 4. **Gerar currículo:** consultar a vaga escolhida, recuperar Claims relevantes, compor JSON, validar e executar o script local, entregando PDF ao usuário.
 5. **Outros fluxos futuros:** preparação para entrevistas, exploração de competências e assistência em candidaturas, sem alterar o backend quando bastarem ferramentas MCP existentes.
@@ -238,55 +233,21 @@ Os nomes das ferramentas (`get_job`, `search_knowledge`, `get_knowledge`) são *
 
 ### 5.1 Execução manual pela skill (janela de 24 horas)
 
-```mermaid
-sequenceDiagram
-    actor User as Usuário
-    participant Agent as Agente + Skill
-    participant PY as collect_jobs.py local
-    participant API as Spring Boot REST API
-    participant SRC as LinkedIn / Indeed / Glassdoor
-    participant DB as PostgreSQL
-    participant AI as Gemma 4
+O agente executa o coletor local, que consulta os portais e envia os anúncios encontrados à API em lotes. Não há registro de execução no banco.
 
-    User->>Agent: Coletar vagas
-    Agent->>PY: Executar script de coleta
-    opt Processo pode sobreviver ao fim do turno
-        Agent-->>User: Execução iniciada; finalizar turno sem esperar
-    end
-    PY->>API: GET pesquisas habilitadas
-    API-->>PY: JobSearch (lookbackHours=24)
-    loop Para cada pesquisa e portal
-        PY->>SRC: Pesquisar vagas no portal
-        SRC-->>PY: Dados disponíveis (sem garantia de cobertura total)
-        PY->>API: POST lote JSON (runId, provider, postings.rawData)
-        API->>DB: Upsert JobPosting por provider + URL
-        API->>DB: Criar/reutilizar CollectionRun; vincular CollectionRunPosting
-        opt Publicação nova ou reprocessamento relevante
-            API->>API: Normalizar campos determinísticos
-            opt Campos incompletos ou duplicação ambígua
-                API->>AI: Extração / avaliação de equivalência
-                AI-->>API: Dados estruturados
-            end
-            API->>DB: Criar/atualizar Job e satélites
-        end
-        PY->>API: Lote final + status da execução
-        API->>DB: Finalizar CollectionRun
-    end
-```
+O contrato REST inicial é ilustrativo: cada anúncio inclui `provider`, `normalizedUrl`, `publishedAt` quando disponível e `rawData`. Reenviar a mesma identidade atualiza o mesmo `JobPosting` e toca `updatedAt`, inclusive se os dados forem iguais. O lote não tem ID persistente de execução, e o backend não mantém uma conexão durante a coleta local.
 
-**Contrato REST inicial (ilustrativo):** `GET /api/v1/job-searches?enabled=true` e `POST /api/v1/job-discovery/collections`. Cada POST recebe `runId`, `jobSearchId`, `provider`, `postings[]`, `finalBatch` e `status` ao concluir, quando aplicável. `JobPosting` recebe `url`, `publishedAt` (quando disponível) e `rawData`. O identificador de execução deve permanecer estável nos reenvios, sem criar novos anúncios ou novos vínculos. Os lotes são limitados em tamanho; o backend não recebe uma conexão contínua por todo o período da coleta.
+O Python não chama modelos, não executa regras de merge de vagas, não grava no PostgreSQL e não precisa expor portas. O backend valida, normaliza, persiste, extrai e deduplica; o Angular usa REST. A coleta é uma tarefa local sob demanda, sem Cloud Scheduler, Cloud Run Job ou timer.
 
-**Responsabilidades:** o Python não chama modelos, não executa regras de merge de vagas, não grava no PostgreSQL e não precisa expor portas. O backend valida, normaliza, persiste, extrai e deduplica; o Angular apenas usa REST. Uma tentativa de coleta iniciada pelo agente é uma tarefa local sob demanda, **sem Cloud Scheduler, Cloud Run Job ou timer**. Se o ambiente do agente permitir criar um processo independente, ele pode confirmar o início e finalizar o turno; caso contrário, o término da sessão pode interromper o Python, e a skill não deve garantir execução em segundo plano.
+### 5.2 Dados brutos, identidade e falhas
 
-### 5.2 Dados brutos, deduplicação e falhas
-
-- `JobPosting.rawData` é **JSONB** (`raw_data`), com os dados recebidos do scraper (por exemplo, título, empresa, descrição e atributos disponíveis). Não é um documento HTML obrigatório nem uma chave para objeto externo.
-- A deduplicação tem **dois níveis**: `(provider, url normalizada)` para a mesma publicação e associação de publicações diferentes ao mesmo `Job` para oportunidades equivalentes. Consultas SQL e campos determinísticos primeiro; Gemma 4 somente para extração ausente e ambiguidade relevante.
-- `CollectionRun.provider` indica LinkedIn, Indeed ou Glassdoor; não indica JobSpy. Uma execução representa um portal para uma `JobSearch` e pode terminar `COMPLETED`, `PARTIAL` ou `FAILED`.
-- Retentar lotes por falha de HTTP deve ser seguro via `runId`, upsert e `CollectionRunPosting` com PK composta. A transação por lote deve preservar a consistência de seus vínculos.
-- Páginas com restrição de acesso, HTTP 429 ou falhas de coleta devem produzir execução parcial/falha sem forçar o acesso. A coleta local não altera os termos de uso das plataformas. Não assumir completude dos resultados nem perfeição do filtro temporal.
-- `rawData` é entrada não confiável. Sanitizar/validar, limitar tamanho e definir retenção para evitar crescimento desnecessário do Neon; não guardar cookies, credenciais nem dados sensíveis da sessão. Prompt injection nas descrições não deve influenciar as instruções do backend.
-- O MVP recebe lotes pequenos e executa o processamento no backend sem presumir que threads continuem após a resposta no Cloud Run. Se a inferência ficar longa, avaliar uma fila confiável no futuro, **não incluída na arquitetura atual**.
+- `JobPosting.rawData` é JSONB com os dados recebidos do scraper, como título, empresa e descrição; não é HTML obrigatório nem uma chave para Object Storage.
+- A identidade do anúncio usa `(provider, normalizedUrl)`. Anúncios de provedores distintos podem apontar para o mesmo `Job`. A normalização da URL deve ser consistente para cada provedor.
+- Uma nova observação do mesmo anúncio atualiza `updatedAt` com o horário do servidor e os dados atuais do registro. A ingestão chama `JobPosting.markObserved()` para garantir a atualização mesmo quando os demais dados não mudaram. O banco não grava um evento nem uma linha adicional por observação.
+- Falhas de coleta são tratadas pelo script local; itens que falharam não precisam ser enviados. Falhas de ingestão da API são devolvidas ao cliente, que pode reenviar os anúncios com a mesma identidade.
+- A coleta local não altera os termos de uso das plataformas. Não assumir cobertura total dos resultados nem perfeição do filtro temporal.
+- `rawData` é entrada não confiável. Validar o formato, limitar tamanho e definir retenção; não guardar cookies, credenciais nem dados sensíveis da sessão. Prompt injection nas descrições não deve influenciar as instruções do backend.
+- O MVP recebe lotes pequenos e executa o processamento no backend sem presumir que threads continuem após a resposta no Cloud Run. Se a inferência ficar longa, avaliar uma fila confiável no futuro, não incluída na arquitetura atual.
 
 ## 6. Infraestrutura — implantação proposta
 
@@ -317,7 +278,7 @@ flowchart TB
     AGENT -->|"executa"| COLLECT
     AGENT --> PDF
     COLLECT --> BOARDS
-    COLLECT -->|"GET buscas + POST lotes JSON/HTTPS"| SERVICE
+    COLLECT -->|"POST lotes JSON/HTTPS"| SERVICE
     SERVICE --> POSTGRES
     SERVICE --> AI
     SECRET -. "credenciais de backend" .-> SERVICE
@@ -332,11 +293,11 @@ flowchart TB
 
 ## 7. Interface e segurança
 
-- REST e MCP expõem operações compatíveis dos domínios, invocando os mesmos casos de uso. A superfície de escrita MCP deve validar entidades e relações tão rigorosamente quanto a REST. O endpoint de ingestão REST também exige autenticação, validação, limites de tamanho e idempotência por execução.
+- REST e MCP expõem operações compatíveis dos domínios, invocando os mesmos casos de uso. A superfície de escrita MCP deve validar entidades e relações tão rigorosamente quanto a REST. O endpoint de ingestão REST também exige autenticação, validação, limites de tamanho e upsert idempotente pela identidade do anúncio.
 - Acesso é privado para um único usuário; ainda assim, usar autenticação/autorização no REST e MCP remoto, TLS, gerenciamento de segredos e proteção dos dados profissionais. A escolha do provedor de identidade e dos mecanismos OAuth/OIDC será refinada na implementação.
 - Não expor o banco nem o armazenamento de HTML diretamente aos agentes. O MCP entrega dados controlados e IDs para detalhamento, não credenciais.
 - Proteger contra prompt injection nas descrições de vagas e sanitizar os dados submetidos aos modelos. `rawData` recebido de um script local não é automaticamente confiável; não persistir cookies, tokens ou dados de sessão do navegador.
-- Usar migrações de esquema (Flyway), testes de integração com PostgreSQL/pgvector, logs de ingestão, tratamento de falhas e backups do banco. Testar reenvio de lotes, unicidade por URL e histórico de CollectionRun.
+- Usar migrações de esquema (Flyway), testes de integração com PostgreSQL/pgvector, logs de ingestão, tratamento de falhas e backups do banco. Verificar unicidade pela identidade do anúncio e atualização de `updatedAt` nos reenvios.
 - A geração de PDF executada pela skill deve validar estrutura e texto antes do template e não executar código arbitrário fornecido por descrições de vagas.
 
 ## 8. Decisões explícitas / fora do escopo
@@ -349,7 +310,7 @@ flowchart TB
 | Brutos no PostgreSQL | `JobPosting.rawData` → `raw_data JSONB`; sem Object Storage para o MVP |
 | Sem matching periódico                    | Usuário/agente escolhe vaga sob demanda                                         |
 | Sem vetores para vagas no MVP             | Deduplicação por dados determinísticos + LLM em casos ambíguos                  |
-| `CollectionRun` N `JobPosting`            | Histórico factual de reaparições; agregados por SQL, sem contadores armazenados |
+| Sem entidade de execução de coleta | Observações repetidas atualizam `JobPosting.updatedAt`; o banco mantém o catálogo atual, sem histórico por busca |
 | Skill `dianysma` (mesmo nome de produto) | Interface instrucional para toda a aplicação; currículo é uma funcionalidade    |
 | PDF no cliente                            | Backend não possui Resume, renderizador, bucket de PDF ou endpoint de PDF       |
 | Templates em código na skill              | Versionamento por arquivos locais, sem entidade Template                        |

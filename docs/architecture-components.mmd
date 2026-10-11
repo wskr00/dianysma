@@ -42,7 +42,7 @@ flowchart LR
     RESUME --> PDF
 
     COLLECT -->|"pesquisa"| SOURCES
-    COLLECT -->|"GET pesquisas + POST lotes JSON/HTTPS"| REST
+    COLLECT -->|"POST lotes JSON/HTTPS"| REST
     REST --> CK
     REST --> JD
     MCP --> CK

@@ -1,74 +1,46 @@
 classDiagram
     direction TB
 
-    class Job {
+    class Auditable {
         +UUID id
-        +String title
-        +String companyName
-        +String description
         +OffsetDateTime createdAt
         +OffsetDateTime updatedAt
     }
 
+    class Job {
+        +String title
+        +String companyName
+        +String description
+    }
+
     class JobRequirements {
-        +UUID id
-        +UUID jobId
+        +UUID id = job.id
         +List~String~ required
         +List~String~ preferred
     }
 
     class JobCompensation {
-        +UUID id
-        +UUID jobId
-        +String salaryText
+        +UUID id = job.id
+        +String salary
+        +SalaryPeriod salaryPeriod
         +List~String~ benefits
     }
 
     class JobLocation {
-        +UUID id
-        +UUID jobId
+        +UUID id = job.id
         +String country
         +String state
         +String city
-        +WorkMode workMode
-        +String description
+        +WorkMode workMode opcional
     }
 
     class JobPosting {
         +UUID id
         +UUID jobId
-        +JobProvider provider
-        +String url
+        +String provider
+        +String normalizedUrl
         +Json rawData
         +OffsetDateTime publishedAt
-        +PostingProcessingStatus processingStatus
-        +OffsetDateTime createdAt
-        +OffsetDateTime updatedAt
-    }
-
-    class JobSearch {
-        +UUID id
-        +String query
-        +String countryCode
-        +Integer lookbackHours
-        +Boolean enabled
-        +OffsetDateTime createdAt
-        +OffsetDateTime updatedAt
-    }
-
-    class CollectionRun {
-        +UUID id
-        +UUID jobSearchId
-        +JobProvider provider
-        +CollectionRunStatus status
-        +OffsetDateTime startedAt
-        +OffsetDateTime finishedAt
-    }
-
-    class CollectionRunPosting {
-        <<association table>>
-        +UUID collectionRunId
-        +UUID jobPostingId
     }
 
     class WorkMode {
@@ -76,47 +48,29 @@ classDiagram
         REMOTE
         HYBRID
         ONSITE
-        UNKNOWN
     }
 
-    class JobProvider {
+    class SalaryPeriod {
         <<enumeration>>
-        LINKEDIN
-        INDEED
-        GLASSDOOR
-        INFOJOBS
-        OTHER
+        HOURLY
+        DAILY
+        WEEKLY
+        MONTHLY
+        ANNUAL
     }
 
-    class PostingProcessingStatus {
-        <<enumeration>>
-        PENDING
-        COMPLETED
-        FAILED
-    }
-
-    class CollectionRunStatus {
-        <<enumeration>>
-        RUNNING
-        COMPLETED
-        PARTIAL
-        FAILED
-    }
+    Auditable <|-- Job
+    Auditable <|-- JobPosting
 
     Job "1" *-- "0..1" JobRequirements : requirements
     Job "1" *-- "0..1" JobCompensation : compensation
     Job "1" *-- "0..1" JobLocation : location
-    Job "0..1" <-- "0..*" JobPosting : canonical job
-
-    JobSearch "1" <-- "0..*" CollectionRun : search definition
-    CollectionRun "1" <-- "0..*" CollectionRunPosting : observed in run
-    JobPosting "1" <-- "0..*" CollectionRunPosting : observed posting
+    Job "1" <-- "0..*" JobPosting : canonical job
 
     JobLocation --> WorkMode : workMode
-    JobPosting --> JobProvider : provider
-    JobPosting --> PostingProcessingStatus : processingStatus
-    CollectionRun --> JobProvider : provider
-    CollectionRun --> CollectionRunStatus : status
+    JobCompensation --> SalaryPeriod : salaryPeriod
 
-    note for CollectionRunPosting "PK: (collectionRunId, jobPostingId); N:N factual history"
-    note for JobPosting "rawData is JSONB; jobId nullable until extraction and deduplication"
+    note for JobPosting "Uma identidade por (provider, normalizedUrl); observações repetidas atualizam updatedAt"
+    note for JobRequirements "PK/FK job_id compartilha Job.id"
+    note for JobCompensation "PK/FK job_id compartilha Job.id"
+    note for JobLocation "PK/FK job_id compartilha Job.id"

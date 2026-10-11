@@ -21,8 +21,7 @@ import lombok.Setter;
 @Entity
 @Table(name = "participation", indexes = {
 		@Index(name = "idx_participation_experience_id", columnList = "experience_id"),
-		@Index(name = "idx_participation_project_id", columnList = "project_id"),
-		@Index(name = "uk_participation_context", columnList = "experience_id, project_id", unique = true)
+		@Index(name = "idx_participation_project_id", columnList = "project_id")
 }, check = @CheckConstraint(
 		name = "ck_participation_has_context",
 		constraint = "num_nonnulls(experience_id, project_id) >= 1"))
