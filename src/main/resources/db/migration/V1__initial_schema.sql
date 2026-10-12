@@ -248,6 +248,12 @@ alter table if exists project
 ALTER TABLE participation
     ADD CONSTRAINT uk_participation_context UNIQUE NULLS NOT DISTINCT (experience_id, project_id);
 
+CREATE UNIQUE INDEX uq_skill_name_case_insensitive
+    ON skill (upper(name));
+
+CREATE UNIQUE INDEX uq_profile_singleton
+    ON profile ((true));
+
 CREATE TABLE vector_store (
     id uuid DEFAULT uuid_generate_v4() NOT NULL,
     content text,

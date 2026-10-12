@@ -1,6 +1,7 @@
 package io.github.wskr00.dianysma.knowledge.domain;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -15,11 +16,10 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.UpdateTimestamp;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "knowledge_chunk", indexes = {
@@ -30,9 +30,7 @@ import lombok.Setter;
 		name = "ck_knowledge_chunk_one_source",
 		constraint = "num_nonnulls(participation_id, claim_id, education_id) = 1"))
 @Getter
-@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class KnowledgeChunk {
 
 	@Column(name = "id", nullable = false, updatable = false)
@@ -58,7 +56,46 @@ public class KnowledgeChunk {
 	private String model;
 
 	@Column(name = "indexed_at", nullable = false)
+	@UpdateTimestamp
 	private OffsetDateTime indexedAt;
+
+	private KnowledgeChunk(UUID id, Claim claim, String hash, String model) {
+		this.id = Objects.requireNonNull(id);
+		this.claim = Objects.requireNonNull(claim);
+		this.hash = Objects.requireNonNull(hash);
+		this.model = Objects.requireNonNull(model);
+	}
+
+	private KnowledgeChunk(UUID id, Participation participation, String hash, String model) {
+		this.id = Objects.requireNonNull(id);
+		this.participation = Objects.requireNonNull(participation);
+		this.hash = Objects.requireNonNull(hash);
+		this.model = Objects.requireNonNull(model);
+	}
+
+	private KnowledgeChunk(UUID id, Education education, String hash, String model) {
+		this.id = Objects.requireNonNull(id);
+		this.education = Objects.requireNonNull(education);
+		this.hash = Objects.requireNonNull(hash);
+		this.model = Objects.requireNonNull(model);
+	}
+
+	public static KnowledgeChunk forClaim(UUID id, Claim claim, String hash, String model) {
+		return new KnowledgeChunk(id, claim, hash, model);
+	}
+
+	public static KnowledgeChunk forParticipation(UUID id, Participation participation, String hash, String model) {
+		return new KnowledgeChunk(id, participation, hash, model);
+	}
+
+	public static KnowledgeChunk forEducation(UUID id, Education education, String hash, String model) {
+		return new KnowledgeChunk(id, education, hash, model);
+	}
+
+	public void updateIndex(String hash, String model) {
+		this.hash = Objects.requireNonNull(hash);
+		this.model = Objects.requireNonNull(model);
+	}
 
 	@PrePersist
 	@PreUpdate
@@ -67,7 +104,7 @@ public class KnowledgeChunk {
 				+ (claim == null ? 0 : 1)
 				+ (education == null ? 0 : 1);
 		if (sourceCount != 1) {
-			throw new IllegalStateException("A knowledge chunk must reference exactly one source.");
+			throw new IllegalStateException("Um trecho de conhecimento deve referenciar exatamente uma fonte.");
 		}
 	}
 }

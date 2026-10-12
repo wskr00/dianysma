@@ -46,7 +46,7 @@ public class Participation extends Auditable {
 	@PreUpdate
 	private void validateContext() {
 		if (experience == null && project == null) {
-			throw new IllegalStateException("A participation must reference an experience, a project, or both.");
+			throw new IllegalStateException("Uma participação deve estar vinculada a uma experiência, a um projeto ou a ambos.");
 		}
 	}
 }

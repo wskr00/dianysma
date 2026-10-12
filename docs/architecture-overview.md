@@ -78,22 +78,49 @@ flowchart LR
 
 O backend é uma aplicação Spring organizada por domínio, com o pacote `knowledge` para o Career Knowledge. O transporte MCP é a interface de entrada do sistema e chama os serviços de aplicação. Não há API REST de negócio.
 
-Filtros de consulta serão definidos junto com o contrato das ferramentas MCP. RSQL JPA Specification não faz parte do build atual; podemos avaliar uma implementação quando os casos de busca estiverem definidos.
+As ferramentas MCP oferecem leitura, listagem, criação, atualização e exclusão dos registros de Career Knowledge quando aplicável. O perfil único não pode ser excluído; competências são um catálogo com busca e criação idempotente. Organizações e competências têm ferramentas de busca. A busca semântica cobre Claims, Participations com descrição e Educations; os demais registros são recuperados por suas ferramentas canônicas. RSQL JPA Specification não faz parte do build atual.
 
 ```text
-app/src/main/java/io/github/wskr00/dianysma/
+src/main/java/io/github/wskr00/dianysma/
 ├── core/
 │   └── audit/
 └── knowledge/
+    ├── controller/
+    │   ├── dto/
+    │   │   ├── command/
+    │   │   │   ├── claim/
+    │   │   │   ├── common/
+    │   │   │   ├── education/
+    │   │   │   ├── experience/
+    │   │   │   ├── knowledge/
+    │   │   │   ├── language/
+    │   │   │   ├── organization/
+    │   │   │   ├── participation/
+    │   │   │   ├── profile/
+    │   │   │   ├── project/
+    │   │   │   └── skill/
+    │   │   └── result/
+    │   │       ├── claim/
+    │   │       ├── common/
+    │   │       ├── education/
+    │   │       ├── experience/
+    │   │       ├── knowledge/
+    │   │       ├── language/
+    │   │       ├── organization/
+    │   │       ├── participation/
+    │   │       ├── profile/
+    │   │       ├── project/
+    │   │       └── skill/
+    │   └── mcp/
     ├── domain/
     │   └── enums/
-    ├── service/
     ├── repository/
-    └── controller/
-        └── mcp/
+    └── service/
+        ├── exception/
+        └── vector/
 ```
 
-O código atual já contém as entidades de `knowledge/domain`; as pastas de serviço, repositório e adaptador MCP serão preenchidas durante a implementação. `core/audit` contém a superclasse `Auditable` compartilhada. A modelagem está detalhada em [`career-knowledge-class-diagram.md`](career-knowledge-class-diagram.md).
+Os DTOs de entrada e saída ficam em `controller/dto`, separados por tipo e agregado. As exceções de aplicação ficam em `service/exception`; os serviços de aplicação ficam em `service`, e a integração com pgvector fica em `service/vector`. `core/audit` contém a superclasse `Auditable` compartilhada. A modelagem está detalhada em [`career-knowledge-class-diagram.md`](career-knowledge-class-diagram.md), e o contrato das ferramentas está em [`mcp-tool-contract.md`](mcp-tool-contract.md).
 
 ## 5. Career Knowledge e busca vetorial
 
@@ -107,7 +134,7 @@ O modelo de domínio permanece o descrito no diagrama de classes:
 - `Education` guarda formação, cursos e certificações.
 - `KnowledgeChunk` relaciona uma fonte canônica com seu documento vetorial.
 
-`KnowledgeVectorStore` será uma fachada por composição: usa o `PgVectorStore` do Spring AI para embeddings e similaridade e um repositório JPA para as FKs e o contexto relacional. A tabela `vector_store` contém `content`, `metadata` e `embedding`; `knowledge_chunk` contém o ID compartilhado, a FK para exatamente uma fonte, o hash, o modelo e a data da indexação. As fontes de domínio continuam sendo a verdade canônica.
+`KnowledgeVectorStore` é uma fachada por composição: usa o `PgVectorStore` do Spring AI para embeddings e similaridade e um repositório JPA para manter a projeção relacional. A busca semântica retorna o tipo e o ID da fonte; o agente chama a ferramenta MCP correspondente para recuperar o registro canônico e suas relações. A tabela `vector_store` contém `content`, `metadata` e `embedding`; `knowledge_chunk` contém o ID compartilhado com o vetor, a FK para exatamente uma fonte, o hash, o modelo e a data da indexação. A FK de `knowledge_chunk.id` para `vector_store.id` tem `ON DELETE CASCADE`. As fontes de domínio continuam sendo a verdade canônica.
 
 O modelo de embedding decidido é Gemini Embedding 2 com 1536 dimensões, usando índice HNSW e distância cosseno no pgvector. O `PgVectorStore` terá `initialize-schema=false`; Flyway cria o schema técnico e as constraints PostgreSQL que JPA não expressa. A migração inicial continua em `V1__initial_schema.sql` enquanto o projeto ainda está em desenvolvimento; o banco local pode ser recriado quando essa V1 mudar.
 
@@ -140,7 +167,7 @@ O `SKILL.md` orienta o agente a recuperar e manter conhecimento pelo MCP, escolh
 | Identidade | Amazon Cognito como authorization server OAuth/OIDC; login Google pode ser federado |
 | Banco | Neon PostgreSQL com pgvector |
 | Embeddings | Gemini Embedding 2, 1536 dimensões |
-| Filtros de consulta | A definir junto com as ferramentas MCP |
+| Filtros de consulta | Busca por nome em organizações e competências; consulta semântica para fatos, participações e formações |
 | Desenvolvimento local | Docker Compose com PostgreSQL e pgvector |
 
 O container do AgentCore chama o servidor Spring na porta 8000. O banco permanece externo no Neon. `compose.yaml` é somente para o banco local; não hospeda backend nem frontend.
@@ -163,7 +190,7 @@ O User Pool deve permitir somente a conta autorizada; o login Google pode ser co
 
 Há dois metadados distintos. O Cognito publica o OpenID Provider Metadata em `<COGNITO_ISSUER_URI>/.well-known/openid-configuration`, com os endpoints do authorization server e as chaves públicas. O AgentCore Runtime, como entrada pública do servidor MCP, publica o Protected Resource Metadata e o anuncia no desafio `WWW-Authenticate` com `resource_metadata`. O Spring Security não duplica essa metadata: no container, ele atua somente como OAuth2 Resource Server, validando os tokens encaminhados pelo Runtime. Em produção, o endpoint do container não deve ser exposto diretamente.
 
-Os scopes Cognito esperados são `dianysma/knowledge.read` e `dianysma/knowledge.write`. O filtro HTTP exige pelo menos um deles para chamadas protegidas; quando as ferramentas MCP forem implementadas, cada operação de leitura ou escrita deve também aplicar sua autorização no método de aplicação correspondente.
+Os scopes Cognito esperados são `dianysma/knowledge.read` e `dianysma/knowledge.write`. O filtro HTTP exige pelo menos um deles para chamadas protegidas; os serviços de aplicação também exigem o scope apropriado para cada operação, além da validação de escopo no endpoint MCP.
 
 `COGNITO_ISSUER_URI` deve ser o issuer do User Pool (por exemplo, `https://cognito-idp.<region>.amazonaws.com/<user-pool-id>`). `MCP_RESOURCE_URI` deve ser exatamente o identificador HTTPS do servidor MCP usado no parâmetro OAuth `resource`, na audience validada pelo Cognito, AgentCore e Spring Security.
 
@@ -179,7 +206,7 @@ Copie `.env.example` para `.env` e ajuste as credenciais locais. O Compose lê `
 
 ## 11. Decisões ainda abertas
 
-- Contratos, nomes, schemas e limites das ferramentas MCP de leitura, escrita, exclusão e busca semântica.
+- Ferramentas MCP para os demais agregados de Career Knowledge e os limites de seus fluxos de edição.
 - Comportamento de OAuth Cognito/AgentCore com ChatGPT e outros clientes MCP, incluindo descoberta e configuração de audience/scopes.
 - Provisionamento e recuperação segura de segredos no runtime.
 - Estratégia de reindexação retomável e consistência transacional entre JPA e `PgVectorStore`.
