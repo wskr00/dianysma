@@ -1,6 +1,8 @@
+server:
+    port: ${SERVER_PORT:8000}
 spring:
     config:
-        import: "optional:file:../.env[.properties]"
+        import: "optional:file:.env[.properties]"
     datasource:
         url: "jdbc:postgresql://${DATABASE_HOST:127.0.0.1}:${DATABASE_PORT:5432}/${DATABASE_NAME:dianysma}"
         username: ${DATABASE_USER:dianysma}
@@ -10,6 +12,13 @@ spring:
             ddl-auto: validate
     application:
         name: dianysma
+    security:
+        oauth2:
+            resourceserver:
+                jwt:
+                    issuer-uri: ${COGNITO_ISSUER_URI}
+                    audiences:
+                        - ${MCP_RESOURCE_URI}
     ai:
         google:
             genai:
@@ -26,4 +35,6 @@ spring:
                 initialize-schema: false
         mcp:
             server:
-                protocol: STREAMABLE
+                protocol: STATELESS
+                streamable-http:
+                    mcp-endpoint: ${MCP_ENDPOINT_PATH:/mcp}

@@ -14,7 +14,7 @@ classDiagram
         +UUID id
         +String name
         +String email
-        +Long phone
+        +String phone
         +String city
         +String state
         +String country

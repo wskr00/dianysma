@@ -5,28 +5,6 @@
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-create type SalaryPeriod as enum (
-	'ANNUAL',
-	'DAILY',
-	'HOURLY',
-	'MONTHLY',
-	'WEEKLY'
-);
-
-create cast (varchar as SalaryPeriod) with inout as implicit;
-
-create cast (SalaryPeriod as varchar) with inout as implicit;
-
-create type WorkMode as enum (
-	'HYBRID',
-	'ONSITE',
-	'REMOTE'
-);
-
-create cast (varchar as WorkMode) with inout as implicit;
-
-create cast (WorkMode as varchar) with inout as implicit;
-
 create type EducationType as enum (
 	'CERTIFICATION',
 	'COURSE',
@@ -105,53 +83,6 @@ create table experience (
 	role varchar(200) not null,
 	description text,
 	primary key (id)
-);
-
-create table job (
-	created_at timestamp(6) with time zone not null,
-	updated_at timestamp(6) with time zone not null,
-	id uuid not null,
-	company_name varchar(100) not null,
-	title varchar(160) not null,
-	description text not null,
-	primary key (id)
-);
-
-create table job_compensation (
-	job_id uuid not null,
-	salary varchar(120),
-	benefits text[] not null,
-	salary_period SalaryPeriod default 'MONTHLY',
-	primary key (job_id)
-);
-
-create table job_location (
-	job_id uuid not null,
-	country varchar(56),
-	state varchar(60),
-	city varchar(80),
-	work_mode WorkMode,
-	primary key (job_id)
-);
-
-create table job_posting (
-	created_at timestamp(6) with time zone not null,
-	published_at timestamp(6) with time zone,
-	updated_at timestamp(6) with time zone not null,
-	id uuid not null,
-	job_id uuid not null,
-	provider varchar(40) not null,
-	normalized_url varchar(512) not null,
-	raw_data jsonb not null,
-	primary key (id),
-	constraint uk_job_posting_provider_url unique (provider, normalized_url)
-);
-
-create table job_requirements (
-	job_id uuid not null,
-	preferred text[] not null,
-	required text[] not null,
-	primary key (job_id)
 );
 
 create table knowledge_chunk (
@@ -242,9 +173,6 @@ create index idx_experience_employer_id
 create index idx_experience_client_id
 	on experience (client_id);
 
-create index idx_job_posting_job_id
-	on job_posting (job_id);
-
 create index idx_knowledge_chunk_participation_id
 	on knowledge_chunk (participation_id);
 
@@ -285,22 +213,6 @@ alter table if exists experience
 alter table if exists experience
 	add constraint fk_experience_employer
 	foreign key (employer_id) references organization;
-
-alter table if exists job_compensation
-	add constraint fk_job_compensation_job
-	foreign key (job_id) references job;
-
-alter table if exists job_location
-	add constraint fk_job_location_job
-	foreign key (job_id) references job;
-
-alter table if exists job_posting
-	add constraint fk_job_posting_job
-	foreign key (job_id) references job;
-
-alter table if exists job_requirements
-	add constraint fk_job_requirements_job
-	foreign key (job_id) references job;
 
 alter table if exists knowledge_chunk
 	add constraint fk_knowledge_chunk_claim

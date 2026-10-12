@@ -1,59 +1,43 @@
 flowchart LR
-    subgraph CLIENT["Ambiente local do usuário / agente"]
-        U([Usuário])
-        WEB["Browser · Angular"]
-        AGENT["Agente externo\nCodex ou cliente compatível"]
+    subgraph CLIENT["Ambiente do usuário"]
+        USER([Usuário])
+        AGENT["Agente MCP externo"]
         SKILL["Skill dianysma\nSKILL.md + referências"]
-        COLLECT["scripts/collect_jobs.py\nJobSpy adaptado · 24h"]
-        RESUME["Script de currículo + Typst"]
-        PDF["PDF entregue ao usuário"]
+        RENDER["render_resume.py + Typst"]
+        PDF["PDF local"]
     end
 
-    subgraph APP["Cloud Run Service · Spring Boot Native"]
-        REST["REST API · ingestão JSON em lotes"]
-        MCP["MCP Server"]
-        CK["Career Knowledge"]
-        JD["Job Discovery"]
+    subgraph IDENTITY["Identidade"]
+        COGNITO["Amazon Cognito\nOAuth 2.1 / OIDC"]
     end
 
-    subgraph DATA["Persistência serverless"]
-        DB[("Neon PostgreSQL · entidades de domínio\nJobPosting.rawData JSONB")]
-        VEC[("vector_store · Spring AI pgvector")]
-        CHUNK[("knowledge_chunk · FKs + metadados")]
+    subgraph AWS["AWS · Amazon Bedrock AgentCore Runtime"]
+        RUNTIME["JWT authorizer\nvalida o acesso MCP"]
+        APP["Dianysma MCP Server\nSpring Boot 4 · Spring Security Resource Server\nNative Image ARM64 · porta 8000 · /mcp"]
+        KNOWLEDGE["Módulo Career Knowledge"]
     end
 
-    subgraph OUTSIDE["Serviços externos"]
-        SOURCES["LinkedIn / Indeed / Glassdoor"]
-        LLM["Gemma 4 · extração e deduplicação"]
-        EMB["API de embeddings"]
-        FIREBASE["Firebase Hosting · Angular estático"]
+    subgraph DATA["Persistência"]
+        DB[("Neon PostgreSQL + pgvector")]
+        VSTORE["vector_store\nPgVectorStore / Spring AI"]
+        CHUNK["knowledge_chunk\nJPA + FKs canônicas"]
     end
 
-    U --> WEB
-    U --> AGENT
-    WEB --> FIREBASE
-    WEB -->|"HTTPS / REST"| REST
+    EMB["Gemini Embedding 2"]
+
+    USER --> AGENT
     AGENT -. "segue instruções" .-> SKILL
-    AGENT -->|"HTTPS / MCP"| MCP
-    AGENT -->|"executa script local"| COLLECT
-    SKILL -. "contém script e template" .-> COLLECT
-    SKILL -.-> RESUME
-    AGENT --> RESUME
-    RESUME --> PDF
-
-    COLLECT -->|"pesquisa"| SOURCES
-    COLLECT -->|"POST lotes JSON/HTTPS"| REST
-    REST --> CK
-    REST --> JD
-    MCP --> CK
-    MCP --> JD
-    JD --> DB
-    JD --> LLM
-    CK --> DB
-    CK --> KV["KnowledgeVectorStore · composição"]
-    KV --> PGS["PgVectorStore / Spring AI"]
-    KV --> REP["KnowledgeChunkRepository · JPA"]
-    PGS --> VEC
-    REP --> CHUNK
-    CHUNK ---|"id compartilhado · 1:1"| VEC
-    PGS -->|"embeddings de escrita / leitura"| EMB
+    AGENT -->|"Authorization Code + PKCE"| COGNITO
+    AGENT -->|"Bearer access token · MCP"| RUNTIME
+    RUNTIME -->|"JWT autorizado + Authorization"| APP
+    APP --> KNOWLEDGE
+    KNOWLEDGE --> DB
+    KNOWLEDGE --> VSTORE
+    KNOWLEDGE --> CHUNK
+    VSTORE --> DB
+    CHUNK --> DB
+    VSTORE --> EMB
+    AGENT --> RENDER
+    SKILL -. "orienta seleção dos fatos" .-> AGENT
+    RENDER --> PDF
+    PDF --> USER
