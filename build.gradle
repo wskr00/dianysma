@@ -1,3 +1,11 @@
+import org.gradle.api.file.FileCollection
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.JavaExec
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.testing.Test
+import org.gradle.process.CommandLineArgumentProvider
+
 plugins {
 	id 'java'
 	id 'org.springframework.boot' version '4.1.1'
@@ -27,6 +35,11 @@ ext {
 	set('springAiVersion', "2.0.1")
 }
 
+configurations {
+	// Keep Mockito's inline mock maker compatible with modern JDKs without dynamic self-attachment.
+	mockitoAgent
+}
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -42,12 +55,12 @@ dependencies {
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-	testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-flyway-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-	testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 	testImplementation 'org.testcontainers:testcontainers-postgresql'
+	mockitoAgent('org.mockito:mockito-core') {
+		transitive = false
+	}
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
@@ -65,8 +78,24 @@ hibernate {
 	}
 }
 
-tasks.named('test') {
+def mockitoAgentArgumentProvider = new CommandLineArgumentProvider() {
+	@InputFiles
+	@PathSensitive(PathSensitivity.RELATIVE)
+	FileCollection agentFiles = configurations.mockitoAgent
+
+	@Override
+	Iterable<String> asArguments() {
+		["-javaagent:${this.agentFiles.singleFile}"]
+	}
+}
+
+tasks.named('test', Test) {
 	useJUnitPlatform()
+	jvmArgumentProviders.add(mockitoAgentArgumentProvider)
+}
+
+tasks.named('processTestAot', JavaExec) {
+	jvmArgumentProviders.add(mockitoAgentArgumentProvider)
 }
 
 bootRun {
