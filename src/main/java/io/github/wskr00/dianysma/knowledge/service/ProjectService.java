@@ -28,15 +28,13 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 public class ProjectService {
 
-	private static final String READ_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.read')";
-	private static final String WRITE_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.write')";
 	private static final int DEFAULT_LIMIT = 20;
 	private final ProjectRepository projectRepository;
 	private final OrganizationRepository organizationRepository;
 	private final ParticipationRepository participationRepository;
 	private final KnowledgeVectorIndexer knowledgeVectorIndexer;
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public ProjectDetails get(@NotNull UUID projectId) {
 		return this.projectRepository.findDetailedById(projectId)
@@ -44,7 +42,7 @@ public class ProjectService {
 				.orElseThrow(() -> new KnowledgeNotFoundException("Projeto não encontrado."));
 	}
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public List<ProjectDetails> list(@NotNull @Valid ListKnowledgeRecordsCommand command) {
 		return this.projectRepository.findAllByOrderByUpdatedAtDesc(toLimit(command.limit()))
@@ -53,7 +51,7 @@ public class ProjectService {
 				.toList();
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ProjectDetails create(@NotNull @Valid ProjectCommand command) {
 		Project project = new Project(resolveOrganization(command.organizationId()), command.name().strip(),
@@ -61,7 +59,7 @@ public class ProjectService {
 		return toDetails(this.projectRepository.saveAndFlush(project));
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ProjectDetails update(@NotNull UUID projectId, @NotNull @Valid ProjectCommand command) {
 		Project project = this.projectRepository.findDetailedById(projectId)
@@ -74,7 +72,7 @@ public class ProjectService {
 		return toDetails(project);
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public DeleteResult delete(@NotNull UUID projectId) {
 		Project project = this.projectRepository.findById(projectId).orElse(null);

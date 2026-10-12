@@ -190,7 +190,7 @@ O User Pool deve permitir somente a conta autorizada; o login Google pode ser co
 
 Há dois metadados distintos. O Cognito publica o OpenID Provider Metadata em `<COGNITO_ISSUER_URI>/.well-known/openid-configuration`, com os endpoints do authorization server e as chaves públicas. O AgentCore Runtime, como entrada pública do servidor MCP, publica o Protected Resource Metadata e o anuncia no desafio `WWW-Authenticate` com `resource_metadata`. O Spring Security não duplica essa metadata: no container, ele atua somente como OAuth2 Resource Server, validando os tokens encaminhados pelo Runtime. Em produção, o endpoint do container não deve ser exposto diretamente.
 
-Os scopes Cognito esperados são `dianysma/knowledge.read` e `dianysma/knowledge.write`. O filtro HTTP exige pelo menos um deles para chamadas protegidas; os serviços de aplicação também exigem o scope apropriado para cada operação, além da validação de escopo no endpoint MCP.
+Os scopes padrão são `dianysma/knowledge.read` e `dianysma/knowledge.write`. `KNOWLEDGE_READ_SCOPE` e `KNOWLEDGE_WRITE_SCOPE` podem substituí-los por ambiente; configure os valores exatamente como aparecem no claim `scope` do access token emitido pelo Cognito. O conversor JWT mapeia esses scopes para as authorities internas `KNOWLEDGE_READ` e `KNOWLEDGE_WRITE`; o filtro HTTP e os serviços usam essas authorities para autorizar cada operação.
 
 `COGNITO_ISSUER_URI` deve ser o issuer do User Pool (por exemplo, `https://cognito-idp.<region>.amazonaws.com/<user-pool-id>`). `MCP_RESOURCE_URI` deve ser exatamente o identificador HTTPS do servidor MCP usado no parâmetro OAuth `resource`, na audience validada pelo Cognito, AgentCore e Spring Security.
 
@@ -202,7 +202,7 @@ A especificação MCP `2026-07-28` é posterior ao alvo suportado pela stack esc
 
 ## 10. Configuração local
 
-Copie `.env.example` para `.env` e ajuste as credenciais locais. O Compose lê `DATABASE_NAME`, `DATABASE_USER` e `DATABASE_PASSWORD`; a aplicação lê também `DATABASE_HOST`, `DATABASE_PORT`, `GEMINI_API_KEY`, `COGNITO_ISSUER_URI` e `MCP_RESOURCE_URI`. Os dois últimos são obrigatórios para iniciar o servidor protegido. No ambiente do AgentCore, os valores de produção devem vir de configuração segura do runtime.
+Copie `.env.example` para `.env` e ajuste as credenciais locais. O Compose lê `DATABASE_NAME`, `DATABASE_USER` e `DATABASE_PASSWORD`; a aplicação lê também `DATABASE_HOST`, `DATABASE_PORT`, `GEMINI_API_KEY`, `COGNITO_ISSUER_URI`, `MCP_RESOURCE_URI`, `KNOWLEDGE_READ_SCOPE` e `KNOWLEDGE_WRITE_SCOPE`. O issuer e o resource URI são obrigatórios para iniciar o servidor protegido. No ambiente do AgentCore, os valores de produção devem vir de configuração segura do runtime.
 
 ## 11. Decisões ainda abertas
 

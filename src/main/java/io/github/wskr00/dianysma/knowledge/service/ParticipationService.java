@@ -30,8 +30,6 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 public class ParticipationService {
 
-	private static final String READ_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.read')";
-	private static final String WRITE_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.write')";
 	private static final int DEFAULT_LIMIT = 20;
 	private final ParticipationRepository participationRepository;
 	private final ExperienceRepository experienceRepository;
@@ -39,7 +37,7 @@ public class ParticipationService {
 	private final ClaimRepository claimRepository;
 	private final KnowledgeVectorIndexer knowledgeVectorIndexer;
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public ParticipationDetails get(@NotNull UUID participationId) {
 		return this.participationRepository.findDetailedById(participationId)
@@ -47,7 +45,7 @@ public class ParticipationService {
 				.orElseThrow(() -> new KnowledgeNotFoundException("Participação não encontrada."));
 	}
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public List<ParticipationDetails> list(@NotNull @Valid ListKnowledgeRecordsCommand command) {
 		return this.participationRepository.findAllByOrderByUpdatedAtDesc(toLimit(command.limit()))
@@ -56,7 +54,7 @@ public class ParticipationService {
 				.toList();
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ParticipationDetails create(@NotNull @Valid ParticipationCommand command) {
 		validateContext(command);
@@ -70,7 +68,7 @@ public class ParticipationService {
 		return toDetails(participation);
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ParticipationDetails update(@NotNull UUID participationId, @NotNull @Valid ParticipationCommand command) {
 		validateContext(command);
@@ -88,7 +86,7 @@ public class ParticipationService {
 		return toDetails(participation);
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public DeleteResult delete(@NotNull UUID participationId) {
 		Participation participation = this.participationRepository.findById(participationId).orElse(null);

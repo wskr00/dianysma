@@ -1,5 +1,6 @@
 package io.github.wskr00.dianysma.knowledge.controller.mcp;
 
+import io.github.wskr00.dianysma.core.audit.mcp.McpToolAuditLogger;
 import io.github.wskr00.dianysma.knowledge.service.exception.InvalidKnowledgeInputException;
 import io.github.wskr00.dianysma.knowledge.service.exception.KnowledgeNotFoundException;
 import io.modelcontextprotocol.spec.McpError;
@@ -7,20 +8,22 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 
-@Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class McpToolErrors {
 
-	private McpToolErrors() {
-	}
-
 	static <T> T call(String operation, Supplier<T> action) {
+		long startedAt = System.nanoTime();
 		try {
-			return action.get();
+			T result = action.get();
+			McpToolAuditLogger.succeeded(operation, System.nanoTime() - startedAt);
+			return result;
 		}
 		catch (InvalidKnowledgeInputException | KnowledgeNotFoundException exception) {
+			McpToolAuditLogger.failed(operation, System.nanoTime() - startedAt, exception.getClass());
 			throw exception;
 		}
 		catch (ConstraintViolationException exception) {
@@ -28,16 +31,21 @@ final class McpToolErrors {
 					.map(ConstraintViolation::getMessage)
 					.distinct()
 					.collect(Collectors.joining(" "));
-			throw new InvalidKnowledgeInputException(message.isBlank() ? "A validação dos dados informados falhou." : message);
+			var translatedException = new InvalidKnowledgeInputException(
+					message.isBlank() ? "A validação dos dados informados falhou." : message);
+			McpToolAuditLogger.failed(operation, System.nanoTime() - startedAt, translatedException.getClass());
+			throw translatedException;
 		}
 		catch (AccessDeniedException exception) {
+			McpToolAuditLogger.failed(operation, System.nanoTime() - startedAt, exception.getClass());
 			throw new AccessDeniedException("O token de acesso não contém o escopo de conhecimento necessário.");
 		}
 		catch (McpError exception) {
+			McpToolAuditLogger.failed(operation, System.nanoTime() - startedAt, exception.getClass());
 			throw exception;
 		}
 		catch (RuntimeException exception) {
-			log.error("A ferramenta MCP '{}' falhou inesperadamente.", operation, exception);
+			McpToolAuditLogger.failedUnexpectedly(operation, System.nanoTime() - startedAt, exception);
 			throw new IllegalStateException(
 					"Não foi possível concluir a operação devido a uma falha interna. Tente novamente mais tarde. Se o problema persistir, entre em contato com quem administra o servidor.");
 		}

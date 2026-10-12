@@ -28,15 +28,13 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 public class OrganizationService {
 
-	private static final String READ_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.read')";
-	private static final String WRITE_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.write')";
 	private static final int DEFAULT_LIMIT = 10;
 	private final OrganizationRepository organizationRepository;
 	private final ExperienceRepository experienceRepository;
 	private final ProjectRepository projectRepository;
 	private final KnowledgeVectorIndexer knowledgeVectorIndexer;
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public OrganizationDetails get(@NotNull UUID organizationId) {
 		return this.organizationRepository.findById(organizationId)
@@ -44,7 +42,7 @@ public class OrganizationService {
 				.orElseThrow(() -> new KnowledgeNotFoundException("Organização não encontrada."));
 	}
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public List<OrganizationDetails> search(@NotNull @Valid SearchOrganizationsCommand command) {
 		Limit limit = Limit.of(command.limit() == null ? DEFAULT_LIMIT : command.limit());
@@ -54,14 +52,14 @@ public class OrganizationService {
 				.toList();
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public OrganizationDetails create(@NotNull @Valid CreateOrganizationCommand command) {
 		Organization organization = this.organizationRepository.saveAndFlush(new Organization(command.name().strip()));
 		return toDetails(organization);
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public OrganizationDetails update(@NotNull @Valid UpdateOrganizationCommand command) {
 		Organization organization = this.organizationRepository.findById(command.organizationId())
@@ -72,7 +70,7 @@ public class OrganizationService {
 		return toDetails(organization);
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public DeleteResult delete(@NotNull UUID organizationId) {
 		Organization organization = this.organizationRepository.findById(organizationId).orElse(null);

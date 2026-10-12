@@ -38,14 +38,12 @@ import org.springframework.data.domain.Limit;
 @RequiredArgsConstructor
 public class ClaimService {
 
-	private static final String READ_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.read')";
-	private static final String WRITE_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.write')";
 	private final ClaimRepository claimRepository;
 	private final ParticipationRepository participationRepository;
 	private final SkillRepository skillRepository;
 	private final KnowledgeVectorIndexer knowledgeVectorIndexer;
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public ClaimDetails get(@NotNull UUID claimId) {
 		return this.claimRepository.findDetailedById(claimId)
@@ -53,7 +51,7 @@ public class ClaimService {
 				.orElseThrow(() -> new KnowledgeNotFoundException("Fato profissional não encontrado."));
 	}
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public List<ClaimDetails> list(@NotNull @Valid ListClaimsCommand command) {
 		int requestedLimit = command.limit() == null ? 20 : command.limit();
@@ -70,7 +68,7 @@ public class ClaimService {
 				.toList();
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ClaimDetails create(@NotNull @Valid CreateClaimCommand command) {
 		Claim claim = new Claim(
@@ -82,7 +80,7 @@ public class ClaimService {
 		return toDetails(claim);
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ClaimDetails update(@NotNull @Valid UpdateClaimCommand command) {
 		if (Boolean.TRUE.equals(command.clearParticipation()) && command.participationId() != null) {
@@ -110,7 +108,7 @@ public class ClaimService {
 		return toDetails(claim);
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public DeleteResult delete(@NotNull UUID claimId) {
 		Claim claim = this.claimRepository.findById(claimId).orElse(null);

@@ -24,13 +24,11 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 public class EducationService {
 
-	private static final String READ_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.read')";
-	private static final String WRITE_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.write')";
 	private static final int DEFAULT_LIMIT = 20;
 	private final EducationRepository educationRepository;
 	private final KnowledgeVectorIndexer knowledgeVectorIndexer;
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public EducationDetails get(@NotNull UUID educationId) {
 		return this.educationRepository.findById(educationId)
@@ -38,7 +36,7 @@ public class EducationService {
 				.orElseThrow(() -> new KnowledgeNotFoundException("Formação não encontrada."));
 	}
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public List<EducationDetails> list(@NotNull @Valid ListKnowledgeRecordsCommand command) {
 		return this.educationRepository.findAllByOrderByUpdatedAtDesc(toLimit(command.limit()))
@@ -47,7 +45,7 @@ public class EducationService {
 				.toList();
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public EducationDetails create(@NotNull @Valid EducationCommand command) {
 		Education education = new Education(command.institution().strip(), command.type(), command.title().strip(),
@@ -58,7 +56,7 @@ public class EducationService {
 		return toDetails(education);
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public EducationDetails update(@NotNull UUID educationId, @NotNull @Valid EducationCommand command) {
 		Education education = this.educationRepository.findById(educationId)
@@ -77,7 +75,7 @@ public class EducationService {
 		return toDetails(education);
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public DeleteResult delete(@NotNull UUID educationId) {
 		Education education = this.educationRepository.findById(educationId).orElse(null);

@@ -25,13 +25,11 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 public class LanguageService {
 
-	private static final String READ_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.read')";
-	private static final String WRITE_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.write')";
 	private static final int DEFAULT_LIMIT = 20;
 	private final LanguageRepository languageRepository;
 	private final ProfileRepository profileRepository;
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public LanguageDetails get(@NotNull UUID languageId) {
 		return this.languageRepository.findById(languageId)
@@ -39,7 +37,7 @@ public class LanguageService {
 				.orElseThrow(() -> new KnowledgeNotFoundException("Idioma não encontrado."));
 	}
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public List<LanguageDetails> list(@NotNull @Valid ListKnowledgeRecordsCommand command) {
 		return this.profileRepository.findFirstByOrderByCreatedAtAsc()
@@ -50,7 +48,7 @@ public class LanguageService {
 				.toList();
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public LanguageDetails create(@NotNull @Valid LanguageCommand command) {
 		Profile profile = this.profileRepository.findFirstByOrderByCreatedAtAsc()
@@ -59,7 +57,7 @@ public class LanguageService {
 		return toDetails(this.languageRepository.saveAndFlush(language));
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public LanguageDetails update(@NotNull UUID languageId, @NotNull @Valid LanguageCommand command) {
 		Language language = this.languageRepository.findById(languageId)
@@ -69,7 +67,7 @@ public class LanguageService {
 		return toDetails(this.languageRepository.saveAndFlush(language));
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public DeleteResult delete(@NotNull UUID languageId) {
 		Language language = this.languageRepository.findById(languageId).orElse(null);

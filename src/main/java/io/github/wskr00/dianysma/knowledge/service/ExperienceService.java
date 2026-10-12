@@ -28,15 +28,13 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 public class ExperienceService {
 
-	private static final String READ_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.read')";
-	private static final String WRITE_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.write')";
 	private static final int DEFAULT_LIMIT = 20;
 	private final ExperienceRepository experienceRepository;
 	private final OrganizationRepository organizationRepository;
 	private final ParticipationRepository participationRepository;
 	private final KnowledgeVectorIndexer knowledgeVectorIndexer;
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public ExperienceDetails get(@NotNull UUID experienceId) {
 		return this.experienceRepository.findDetailedById(experienceId)
@@ -44,7 +42,7 @@ public class ExperienceService {
 				.orElseThrow(() -> new KnowledgeNotFoundException("Experiência não encontrada."));
 	}
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public List<ExperienceDetails> list(@NotNull @Valid ListKnowledgeRecordsCommand command) {
 		return this.experienceRepository.findAllByOrderByUpdatedAtDesc(toLimit(command.limit()))
@@ -53,7 +51,7 @@ public class ExperienceService {
 				.toList();
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ExperienceDetails create(@NotNull @Valid ExperienceCommand command) {
 		Experience experience = new Experience(resolveOrganization(command.employerId(), "empregadora"),
@@ -62,7 +60,7 @@ public class ExperienceService {
 		return toDetails(this.experienceRepository.saveAndFlush(experience));
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ExperienceDetails update(@NotNull UUID experienceId, @NotNull @Valid ExperienceCommand command) {
 		Experience experience = this.experienceRepository.findDetailedById(experienceId)
@@ -79,7 +77,7 @@ public class ExperienceService {
 		return toDetails(experience);
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public DeleteResult delete(@NotNull UUID experienceId) {
 		Experience experience = this.experienceRepository.findById(experienceId).orElse(null);

@@ -10,6 +10,7 @@
 - Leitura, listagem, criação, atualização e exclusão são operações distintas. Não há `upsert` genérico para registros de conhecimento.
 - As entradas passam por Bean Validation nos command DTOs e pelas regras de domínio nos serviços. Os limites também aparecem nas descrições MCP, pois o gerador de schema do Spring AI não converte automaticamente todas as constraints Bean Validation.
 - As respostas são DTOs, nunca entidades JPA. Busca semântica retorna IDs estáveis para que o agente leia o registro canônico antes de usá-lo ou alterá-lo.
+- Campos opcionais nas respostas aceitam `null` no schema MCP, de acordo com a nulabilidade das entidades; isso evita rejeitar uma resposta depois de a operação já ter persistido a alteração.
 - Listagens e buscas retornam um objeto estruturado com uma coleção nomeada: `claims`, `educations`, `experiences`, `languages`, `organizations`, `participations`, `projects`, `results` ou `skills`. A coleção pode estar vazia.
 - Os serviços verificam escopos de leitura e escrita. As hints MCP descrevem a operação para o cliente, mas não substituem autorização no servidor.
 
@@ -44,7 +45,7 @@ As ferramentas de consulta e busca declaram `readOnlyHint=true`; as ferramentas 
 
 O catálogo de competências não oferece atualização ou exclusão nesta versão: renomear uma competência altera os embeddings das Claims associadas, e removê-la pode apagar vínculos profissionais. Uma futura operação de manutenção deverá reindexar os fatos relacionados e tratar vínculos explicitamente.
 
-O escopo `dianysma/knowledge.read` é exigido nas ferramentas de consulta, busca e listagem. O escopo `dianysma/knowledge.write` é exigido para criação, atualização e exclusão. Cada serviço também exige seu escopo; um token somente de leitura não autoriza escrita e vice-versa.
+Por padrão, `dianysma/knowledge.read` é exigido nas ferramentas de consulta, busca e listagem, e `dianysma/knowledge.write` para criação, atualização e exclusão. Os valores são configuráveis por `KNOWLEDGE_READ_SCOPE` e `KNOWLEDGE_WRITE_SCOPE`; devem corresponder exatamente aos scopes emitidos no claim `scope` do access token. O conversor JWT mapeia esses scopes para authorities internas, que o filtro HTTP e cada serviço verificam; um token somente de leitura não autoriza escrita e vice-versa.
 
 ## Busca e projeção vetorial
 

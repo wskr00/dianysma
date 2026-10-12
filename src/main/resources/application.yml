@@ -1,5 +1,14 @@
 server:
     port: ${SERVER_PORT:8000}
+logging:
+    structured:
+        format:
+            console: ecs
+dianysma:
+    security:
+        scopes:
+            knowledge-read: ${KNOWLEDGE_READ_SCOPE:dianysma/knowledge.read}
+            knowledge-write: ${KNOWLEDGE_WRITE_SCOPE:dianysma/knowledge.write}
 spring:
     config:
         import: "optional:file:.env[.properties]"

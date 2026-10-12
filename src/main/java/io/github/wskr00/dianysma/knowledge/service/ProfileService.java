@@ -20,11 +20,9 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 public class ProfileService {
 
-	private static final String READ_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.read')";
-	private static final String WRITE_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.write')";
 	private final ProfileRepository profileRepository;
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public ProfileDetails get() {
 		return this.profileRepository.findFirstByOrderByCreatedAtAsc()
@@ -32,7 +30,7 @@ public class ProfileService {
 				.orElseThrow(() -> new KnowledgeNotFoundException("O perfil ainda não foi criado."));
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ProfileDetails create(@NotNull @Valid ProfileCommand command) {
 		if (this.profileRepository.count() > 0) {
@@ -48,7 +46,7 @@ public class ProfileService {
 		}
 	}
 
-	@PreAuthorize(WRITE_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ProfileDetails update(@NotNull @Valid ProfileCommand command) {
 		Profile profile = this.profileRepository.findFirstByOrderByCreatedAtAsc()

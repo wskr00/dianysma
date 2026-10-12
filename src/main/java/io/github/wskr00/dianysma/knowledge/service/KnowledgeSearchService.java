@@ -16,11 +16,10 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 public class KnowledgeSearchService {
 
-	private static final String READ_SCOPE = "hasAuthority('SCOPE_dianysma/knowledge.read')";
 	private static final int DEFAULT_LIMIT = 5;
 	private final KnowledgeVectorStore knowledgeVectorStore;
 
-	@PreAuthorize(READ_SCOPE)
+	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	public List<KnowledgeSearchHit> search(@NotNull @Valid SearchKnowledgeCommand command) {
 		int limit = command.limit() == null ? DEFAULT_LIMIT : command.limit();
 		return this.knowledgeVectorStore.search(command.query().trim(), limit);
