@@ -10,7 +10,8 @@ COPY build.gradle settings.gradle ./
 COPY src/main ./src/main
 
 RUN --mount=type=cache,target=/tmp/gradle-user-home \
-	./gradlew --no-daemon --build-cache nativeCompile
+	./gradlew --no-daemon --build-cache nativeCompile && \
+	cp -L /usr/lib64/libz.so.1 /tmp/libz.so.1
 
 FROM --platform=linux/arm64 dhi.io/static:20250419-glibc-debian13 AS runtime
 
@@ -18,6 +19,8 @@ WORKDIR /app
 
 COPY --from=native-build --chown=65532:65532 --chmod=0555 \
 	/workspace/build/native/nativeCompile/dianysma /app/dianysma
+COPY --from=native-build --chown=0:0 --chmod=0444 \
+	/tmp/libz.so.1 /usr/lib/libz.so.1
 
 EXPOSE 8000
 
