@@ -30,6 +30,7 @@ import tools.jackson.databind.ObjectMapper;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+		"spring.cloud.aws.region.static=us-east-1",
 		"COGNITO_ISSUER_URI=https://cognito-idp.us-east-1.amazonaws.com/us-east-1_test",
 		"MCP_RESOURCE_URI=https://dianysma.example/mcp",
 		"spring.ai.google.genai.embedding.api-key=test-key-never-used"
