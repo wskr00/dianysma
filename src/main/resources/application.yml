@@ -1,5 +1,6 @@
 server:
     port: ${SERVER_PORT:8000}
+    max-http-request-header-size: 16KB
 logging:
     structured:
         format:
