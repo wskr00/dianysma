@@ -27,7 +27,7 @@ public final class McpToolAuditLogger {
 			.addKeyValue("event.outcome", outcome)
 			.addKeyValue("event.duration", durationNanos)
 			.addKeyValue("mcp.tool.name", toolName);
-		if (errorType != null) {
+		if (errorType != null && failure == null) {
 			event.addKeyValue("error.type", errorType.getSimpleName());
 		}
 		if (failure != null) {
