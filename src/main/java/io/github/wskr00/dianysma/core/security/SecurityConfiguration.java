@@ -22,6 +22,7 @@ public class SecurityConfiguration {
 			.csrf(AbstractHttpConfigurer::disable)
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(authorize -> authorize
+				.requestMatchers("/ping").permitAll()
 				.requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
 				.requestMatchers(mcpEndpointPath).hasAnyAuthority(
 						KnowledgeScopes.READ_AUTHORITY,
