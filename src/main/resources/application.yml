@@ -1,15 +1,6 @@
 server:
     port: ${SERVER_PORT:8000}
     max-http-request-header-size: 16KB
-logging:
-    structured:
-        format:
-            console: ecs
-dianysma:
-    security:
-        scopes:
-            knowledge-read: ${KNOWLEDGE_READ_SCOPE:dianysma/knowledge.read}
-            knowledge-write: ${KNOWLEDGE_WRITE_SCOPE:dianysma/knowledge.write}
 spring:
     config:
         import: "optional:file:.env[.properties]"
@@ -29,13 +20,6 @@ spring:
             ddl-auto: validate
     application:
         name: dianysma
-    security:
-        oauth2:
-            resourceserver:
-                jwt:
-                    issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.us-east-1.amazonaws.com/us-east-1_tiO9naD5t}
-                    audiences:
-                        - ${MCP_RESOURCE_URI:}
     ai:
         google:
             genai:

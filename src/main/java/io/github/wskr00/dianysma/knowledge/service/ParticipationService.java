@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -37,7 +36,6 @@ public class ParticipationService {
 	private final ClaimRepository claimRepository;
 	private final KnowledgeVectorIndexer knowledgeVectorIndexer;
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public ParticipationDetails get(@NotNull UUID participationId) {
 		return this.participationRepository.findDetailedById(participationId)
@@ -45,7 +43,6 @@ public class ParticipationService {
 				.orElseThrow(() -> new KnowledgeNotFoundException("Participação não encontrada."));
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public List<ParticipationDetails> list(@NotNull @Valid ListKnowledgeRecordsCommand command) {
 		return this.participationRepository.findAllByOrderByUpdatedAtDesc(toLimit(command.limit()))
@@ -54,7 +51,6 @@ public class ParticipationService {
 				.toList();
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ParticipationDetails create(@NotNull @Valid ParticipationCommand command) {
 		validateContext(command);
@@ -68,7 +64,6 @@ public class ParticipationService {
 		return toDetails(participation);
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ParticipationDetails update(@NotNull UUID participationId, @NotNull @Valid ParticipationCommand command) {
 		validateContext(command);
@@ -86,7 +81,6 @@ public class ParticipationService {
 		return toDetails(participation);
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public DeleteResult delete(@NotNull UUID participationId) {
 		Participation participation = this.participationRepository.findById(participationId).orElse(null);

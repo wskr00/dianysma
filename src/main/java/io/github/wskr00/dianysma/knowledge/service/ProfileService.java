@@ -10,7 +10,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -22,7 +21,6 @@ public class ProfileService {
 
 	private final ProfileRepository profileRepository;
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public ProfileDetails get() {
 		return this.profileRepository.findFirstByOrderByCreatedAtAsc()
@@ -30,7 +28,6 @@ public class ProfileService {
 				.orElseThrow(() -> new KnowledgeNotFoundException("O perfil ainda não foi criado."));
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ProfileDetails create(@NotNull @Valid ProfileCommand command) {
 		if (this.profileRepository.count() > 0) {
@@ -46,7 +43,6 @@ public class ProfileService {
 		}
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ProfileDetails update(@NotNull @Valid ProfileCommand command) {
 		Profile profile = this.profileRepository.findFirstByOrderByCreatedAtAsc()

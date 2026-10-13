@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -29,7 +28,6 @@ public class LanguageService {
 	private final LanguageRepository languageRepository;
 	private final ProfileRepository profileRepository;
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public LanguageDetails get(@NotNull UUID languageId) {
 		return this.languageRepository.findById(languageId)
@@ -37,7 +35,6 @@ public class LanguageService {
 				.orElseThrow(() -> new KnowledgeNotFoundException("Idioma não encontrado."));
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public List<LanguageDetails> list(@NotNull @Valid ListKnowledgeRecordsCommand command) {
 		return this.profileRepository.findFirstByOrderByCreatedAtAsc()
@@ -48,7 +45,6 @@ public class LanguageService {
 				.toList();
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public LanguageDetails create(@NotNull @Valid LanguageCommand command) {
 		Profile profile = this.profileRepository.findFirstByOrderByCreatedAtAsc()
@@ -57,7 +53,6 @@ public class LanguageService {
 		return toDetails(this.languageRepository.saveAndFlush(language));
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public LanguageDetails update(@NotNull UUID languageId, @NotNull @Valid LanguageCommand command) {
 		Language language = this.languageRepository.findById(languageId)
@@ -67,7 +62,6 @@ public class LanguageService {
 		return toDetails(this.languageRepository.saveAndFlush(language));
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public DeleteResult delete(@NotNull UUID languageId) {
 		Language language = this.languageRepository.findById(languageId).orElse(null);

@@ -10,7 +10,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class McpToolErrors {
@@ -35,10 +34,6 @@ final class McpToolErrors {
 					message.isBlank() ? "A validação dos dados informados falhou." : message);
 			McpToolAuditLogger.failed(operation, System.nanoTime() - startedAt, translatedException.getClass());
 			throw translatedException;
-		}
-		catch (AccessDeniedException exception) {
-			McpToolAuditLogger.failed(operation, System.nanoTime() - startedAt, exception.getClass());
-			throw new AccessDeniedException("O token de acesso não contém o escopo de conhecimento necessário.");
 		}
 		catch (McpError exception) {
 			McpToolAuditLogger.failed(operation, System.nanoTime() - startedAt, exception.getClass());

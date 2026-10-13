@@ -7,7 +7,6 @@ import java.util.TreeMap;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Limit;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -29,7 +28,6 @@ public class SkillService {
 	private static final int DEFAULT_LIMIT = 10;
 	private final SkillRepository skillRepository;
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public List<SkillDetails> search(@NotNull @Valid SearchSkillsCommand command) {
 		Limit limit = Limit.of(command.limit() == null ? DEFAULT_LIMIT : command.limit());
@@ -39,7 +37,6 @@ public class SkillService {
 				.toList();
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	public SkillDetails create(@NotNull @Valid CreateSkillCommand command) {
 		String normalizedName = command.name().strip();
 

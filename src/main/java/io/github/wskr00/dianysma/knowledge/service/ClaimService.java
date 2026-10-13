@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -43,7 +42,6 @@ public class ClaimService {
 	private final SkillRepository skillRepository;
 	private final KnowledgeVectorIndexer knowledgeVectorIndexer;
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public ClaimDetails get(@NotNull UUID claimId) {
 		return this.claimRepository.findDetailedById(claimId)
@@ -51,7 +49,6 @@ public class ClaimService {
 				.orElseThrow(() -> new KnowledgeNotFoundException("Fato profissional não encontrado."));
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public List<ClaimDetails> list(@NotNull @Valid ListClaimsCommand command) {
 		int requestedLimit = command.limit() == null ? 20 : command.limit();
@@ -68,7 +65,6 @@ public class ClaimService {
 				.toList();
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ClaimDetails create(@NotNull @Valid CreateClaimCommand command) {
 		Claim claim = new Claim(
@@ -80,7 +76,6 @@ public class ClaimService {
 		return toDetails(claim);
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ClaimDetails update(@NotNull @Valid UpdateClaimCommand command) {
 		if (Boolean.TRUE.equals(command.clearParticipation()) && command.participationId() != null) {
@@ -108,7 +103,6 @@ public class ClaimService {
 		return toDetails(claim);
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public DeleteResult delete(@NotNull UUID claimId) {
 		Claim claim = this.claimRepository.findById(claimId).orElse(null);

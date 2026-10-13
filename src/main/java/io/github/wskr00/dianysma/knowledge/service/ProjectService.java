@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -34,7 +33,6 @@ public class ProjectService {
 	private final ParticipationRepository participationRepository;
 	private final KnowledgeVectorIndexer knowledgeVectorIndexer;
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public ProjectDetails get(@NotNull UUID projectId) {
 		return this.projectRepository.findDetailedById(projectId)
@@ -42,7 +40,6 @@ public class ProjectService {
 				.orElseThrow(() -> new KnowledgeNotFoundException("Projeto não encontrado."));
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public List<ProjectDetails> list(@NotNull @Valid ListKnowledgeRecordsCommand command) {
 		return this.projectRepository.findAllByOrderByUpdatedAtDesc(toLimit(command.limit()))
@@ -51,7 +48,6 @@ public class ProjectService {
 				.toList();
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ProjectDetails create(@NotNull @Valid ProjectCommand command) {
 		Project project = new Project(resolveOrganization(command.organizationId()), command.name().strip(),
@@ -59,7 +55,6 @@ public class ProjectService {
 		return toDetails(this.projectRepository.saveAndFlush(project));
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ProjectDetails update(@NotNull UUID projectId, @NotNull @Valid ProjectCommand command) {
 		Project project = this.projectRepository.findDetailedById(projectId)
@@ -72,7 +67,6 @@ public class ProjectService {
 		return toDetails(project);
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public DeleteResult delete(@NotNull UUID projectId) {
 		Project project = this.projectRepository.findById(projectId).orElse(null);

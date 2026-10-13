@@ -2,8 +2,6 @@ package io.github.wskr00.dianysma.knowledge.controller.mcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.BDDMockito.given;
 
 import io.github.wskr00.dianysma.TestcontainersConfiguration;
 import java.net.URI;
@@ -22,25 +20,15 @@ import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
 		"spring.cloud.aws.region.static=us-east-1",
-		"COGNITO_ISSUER_URI=https://cognito-idp.us-east-1.amazonaws.com/us-east-1_test",
-		"MCP_RESOURCE_URI=https://dianysma.example/mcp",
 		"spring.ai.google.genai.embedding.api-key=test-key-never-used"
 })
 class McpServerIntegrationTest {
-
-	private static final String READ_TOKEN = "read-token";
-	private static final String WRITE_TOKEN = "write-token";
-	private static final String READ_WRITE_TOKEN = "read-write-token";
-	private static final String NO_SCOPE_TOKEN = "no-scope-token";
 
 	@LocalServerPort
 	private int serverPort;
@@ -53,9 +41,6 @@ class McpServerIntegrationTest {
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
-	@MockitoBean
-	private JwtDecoder jwtDecoder;
-
 	private int requestId;
 
 	@BeforeEach
@@ -63,24 +48,17 @@ class McpServerIntegrationTest {
 		this.requestId = 1;
 		this.jdbcTemplate.update("delete from profile");
 		this.jdbcTemplate.update("delete from skill");
-
-		given(this.jwtDecoder.decode(anyString())).willAnswer(invocation -> {
-			String token = invocation.getArgument(0);
-			String scopes = switch (token) {
-				case READ_TOKEN -> "dianysma/knowledge.read";
-				case WRITE_TOKEN -> "dianysma/knowledge.write";
-				case READ_WRITE_TOKEN -> "dianysma/knowledge.read dianysma/knowledge.write";
-				default -> "";
-			};
-			return jwt(token, scopes);
-		});
 	}
 
 	@Test
-	void rejectsMcpRequestsWithoutBearerToken() throws Exception {
-		var response = post(null, initializeRequest());
+	void anonymousPingReturnsValidJsonRpcResponse() throws Exception {
+		var response = post(request("ping", Map.of()));
 
-		assertThat(response.statusCode()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
+		assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+		assertThat(response.body().path("jsonrpc").asString()).isEqualTo("2.0");
+		assertThat(response.body().path("id").asInt()).isEqualTo(1);
+		assertThat(response.body().path("result").isObject()).isTrue();
+		assertThat(response.body().path("result").isEmpty()).isTrue();
 	}
 
 	@Test
@@ -96,38 +74,31 @@ class McpServerIntegrationTest {
 	}
 
 	@Test
-	void authenticatedTokenWithoutKnowledgeScopeCannotAccessMcpEndpoint() throws Exception {
-		var response = post(NO_SCOPE_TOKEN, initializeRequest());
+	void initializeAndToolsListWorkWithoutApplicationAuthentication() throws Exception {
+		var initialized = post(initializeRequest());
+		assertThat(initialized.statusCode()).isEqualTo(HttpStatus.OK.value());
+		assertThat(initialized.body().path("result").path("protocolVersion").asString()).isEqualTo("2025-11-25");
+		post(notification("notifications/initialized"));
 
-		assertThat(response.statusCode()).isEqualTo(HttpStatus.FORBIDDEN.value());
+		JsonNode tools = post(request("tools/list", Map.of())).body();
+		assertThat(tools.path("result").path("tools").size()).isEqualTo(41);
+		assertThat(findTool(tools, "create_profile").path("name").asString()).isEqualTo("create_profile");
+		assertThat(findTool(tools, "get_profile").path("name").asString()).isEqualTo("get_profile");
 	}
 
 	@Test
-	void readOnlyTokenCannotCreateProfile() throws Exception {
-		initialize(READ_TOKEN);
-
-		JsonNode result = callTool(READ_TOKEN, "create_profile", Map.of("name", "Lucas"));
-
-		assertThat(result.path("isError").asBoolean()).isTrue();
-		assertThat(this.jdbcTemplate.queryForObject("select count(*) from profile", Integer.class)).isZero();
-	}
-
-	@Test
-	void writeOnlyTokenCanCreateButCannotReadProfile() throws Exception {
-		initialize(WRITE_TOKEN);
-		assertThat(callTool(WRITE_TOKEN, "create_profile", Map.of("name", "Lucas"))
-				.path("isError").asBoolean()).isFalse();
-
-		JsonNode readResult = callTool(WRITE_TOKEN, "get_profile", Map.of());
-
-		assertThat(readResult.path("isError").asBoolean()).isTrue();
+	void toolsCanBeCalledWithoutApplicationAuthentication() throws Exception {
+		initialize();
+		JsonNode result = callTool("create_profile", Map.of("name", "Lucas"));
+		assertThat(result.path("isError").asBoolean()).isFalse();
+		assertThat(this.jdbcTemplate.queryForObject("select count(*) from profile", Integer.class)).isOne();
 	}
 
 	@Test
 	void invalidProfileEmailIsReportedAsInputErrorAndDoesNotPersist() throws Exception {
-		initialize(WRITE_TOKEN);
+		initialize();
 
-		JsonNode result = callTool(WRITE_TOKEN, "create_profile",
+		JsonNode result = callTool("create_profile",
 				Map.of("name", "Lucas", "email", "not-an-email"));
 
 		assertThat(result.path("isError").asBoolean()).isTrue();
@@ -137,9 +108,9 @@ class McpServerIntegrationTest {
 
 	@Test
 	void profileToolsReturnNullableFieldsAndSkillToolsUseCanonicalCaseInsensitiveRecords() throws Exception {
-		initialize(READ_WRITE_TOKEN);
+		initialize();
 
-		JsonNode tools = post(READ_WRITE_TOKEN, request("tools/list", Map.of())).body();
+		JsonNode tools = post(request("tools/list", Map.of())).body();
 		JsonNode getProfileTool = findTool(tools, "get_profile");
 		JsonNode profileProperties = getProfileTool.path("outputSchema").path("properties");
 		for (String field : List.of("name", "email", "phone", "city", "state", "country",
@@ -149,7 +120,7 @@ class McpServerIntegrationTest {
 				.isTrue();
 		}
 
-		JsonNode createdProfile = callTool(WRITE_TOKEN, "create_profile", Map.of("name", "Lucas"));
+		JsonNode createdProfile = callTool("create_profile", Map.of("name", "Lucas"));
 		assertThat(createdProfile.path("isError").asBoolean()).isFalse();
 		JsonNode profileData = createdProfile.path("structuredContent");
 		assertThat(profileData.path("name").asString()).isEqualTo("Lucas");
@@ -164,22 +135,22 @@ class McpServerIntegrationTest {
 			assertThat(profileData.path(field).isNull()).as("missing profile field %s should be returned as null", field).isTrue();
 		}
 
-		JsonNode duplicateProfile = callTool(WRITE_TOKEN, "create_profile", Map.of("name", "Segundo perfil"));
+		JsonNode duplicateProfile = callTool("create_profile", Map.of("name", "Segundo perfil"));
 		assertThat(duplicateProfile.path("isError").asBoolean()).isTrue();
 		assertThat(this.jdbcTemplate.queryForObject("select count(*) from profile", Integer.class)).isOne();
 
-		JsonNode loadedProfile = callTool(READ_TOKEN, "get_profile", Map.of()).path("structuredContent");
+		JsonNode loadedProfile = callTool("get_profile", Map.of()).path("structuredContent");
 		assertThat(loadedProfile.path("id").asString()).isEqualTo(profileData.path("id").asString());
 		assertThat(loadedProfile.path("email").isNull()).isTrue();
 
-		JsonNode createdSkill = callTool(WRITE_TOKEN, "create_skill",
+		JsonNode createdSkill = callTool("create_skill",
 				Map.of("name", " Java ", "aliases", List.of("JVM", "java"))).path("structuredContent");
-		JsonNode duplicateSkill = callTool(WRITE_TOKEN, "create_skill",
+		JsonNode duplicateSkill = callTool("create_skill",
 				Map.of("name", "java", "aliases", List.of("HotSpot"))).path("structuredContent");
 		assertThat(duplicateSkill.path("id").asString()).isEqualTo(createdSkill.path("id").asString());
 		assertThat(duplicateSkill.path("aliases").toString()).isEqualTo("[\"java\",\"JVM\"]");
 
-		JsonNode search = callTool(READ_TOKEN, "search_skills", Map.of("query", "jvm"));
+		JsonNode search = callTool("search_skills", Map.of("query", "jvm"));
 		assertThat(search.path("structuredContent").path("skills").get(0).path("name").asString())
 			.isEqualTo("Java");
 	}
@@ -212,16 +183,15 @@ class McpServerIntegrationTest {
 			.isInstanceOf(DataIntegrityViolationException.class);
 	}
 
-	private void initialize(String token) throws Exception {
-		var response = post(token, initializeRequest());
+	private void initialize() throws Exception {
+		var response = post(initializeRequest());
 		assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
 		assertThat(response.body().path("result").path("protocolVersion").asString()).isEqualTo("2025-11-25");
-		post(token, notification("notifications/initialized"));
+		post(notification("notifications/initialized"));
 	}
 
-	private JsonNode callTool(String token, String name, Map<String, ?> arguments) throws Exception {
-		JsonNode response = post(token,
-				request("tools/call", Map.of("name", name, "arguments", arguments))).body();
+	private JsonNode callTool(String name, Map<String, ?> arguments) throws Exception {
+		JsonNode response = post(request("tools/call", Map.of("name", name, "arguments", arguments))).body();
 		return response.path("result");
 	}
 
@@ -234,15 +204,12 @@ class McpServerIntegrationTest {
 		throw new AssertionError("Tool MCP não encontrada: " + name);
 	}
 
-	private HttpResponse post(String token, Map<String, ?> body) throws Exception {
+	private HttpResponse post(Map<String, ?> body) throws Exception {
 		String jsonBody = this.objectMapper.writeValueAsString(body);
 		var request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:%d/mcp".formatted(this.serverPort)))
 			.header("Content-Type", "application/json")
 			.header("Accept", "application/json, text/event-stream")
 			.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
-		if (token != null) {
-			request.header("Authorization", "Bearer " + token);
-		}
 		var response = this.httpClient.send(request.build(), BodyHandlers.ofString());
 		JsonNode json = response.body() == null || response.body().isBlank()
 				? this.objectMapper.nullNode()
@@ -293,14 +260,6 @@ class McpServerIntegrationTest {
 			}
 		}
 		return false;
-	}
-
-	private static Jwt jwt(String token, String scopes) {
-		return Jwt.withTokenValue(token)
-			.header("alg", "none")
-			.claim("scope", scopes)
-			.claim("aud", "https://dianysma.example/mcp")
-			.build();
 	}
 
 	private void insertProfile(UUID id, String name) {

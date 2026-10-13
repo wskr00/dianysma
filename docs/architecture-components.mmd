@@ -13,7 +13,7 @@ flowchart LR
 
     subgraph AWS["AWS · Amazon Bedrock AgentCore Runtime"]
         RUNTIME["JWT authorizer\nvalida o acesso MCP"]
-        APP["Dianysma MCP Server\nSpring Boot 4 · Spring Security Resource Server\nNative Image ARM64 · porta 8000 · /mcp"]
+        APP["Dianysma MCP Server\nSpring Boot 4 · MCP stateless\nNative Image ARM64 · porta 8000 · /mcp"]
         KNOWLEDGE["Módulo Career Knowledge"]
     end
 
@@ -29,7 +29,7 @@ flowchart LR
     AGENT -. "segue instruções" .-> SKILL
     AGENT -->|"Authorization Code + PKCE"| COGNITO
     AGENT -->|"Bearer access token · MCP"| RUNTIME
-    RUNTIME -->|"JWT autorizado + Authorization"| APP
+    RUNTIME -->|"MCP autorizado"| APP
     APP --> KNOWLEDGE
     KNOWLEDGE --> DB
     KNOWLEDGE --> VSTORE

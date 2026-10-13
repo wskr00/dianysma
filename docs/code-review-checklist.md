@@ -6,12 +6,11 @@ A marca `[x]` significa que o arquivo foi lido integralmente. Arquivos ainda nã
 
 ## Correções aplicadas depois desta auditoria
 
-- [x] Os scopes de leitura e escrita agora vêm de `dianysma.security.scopes` e podem ser configurados por `KNOWLEDGE_READ_SCOPE` e `KNOWLEDGE_WRITE_SCOPE`; um conversor JWT os mapeia para authorities internas verificadas pelo filtro HTTP e pelos serviços.
+- [x] A configuração interna de JWT e os scopes por ferramenta foram removidos. O AgentCore Runtime V2 aplica o scope único `knowledge.access`; os achados de autorização interna abaixo foram substituídos por essa arquitetura.
 - [x] Os campos opcionais de `ProfileDetails`, `ClaimDetails`, `EducationDetails`, `ExperienceDetails`, `ParticipationDetails` e `ProjectDetails` agora são declarados como nullable no schema MCP de saída.
 
 ## Problemas reais confirmados até agora
 
-- `src/main/java/io/github/wskr00/dianysma/core/security/SecurityConfiguration.java` e os 10 serviços em `knowledge/service`: authorities OAuth estão hardcoded como `dianysma/knowledge.read` e `dianysma/knowledge.write`. O fluxo MCP local usa `resource=http://localhost:8000/mcp`; o Cognito já rejeitou a combinação anterior por resource binding, e, ao emitir scopes vinculados ao URI solicitado, o backend não os aceita.
 - Schemas MCP de saída incompatíveis com respostas reais: as tools usam `generateOutputSchema = true`, mas alguns DTOs retornam `null` em componentes declarados como tipos não anuláveis. O caso `ProfileDetails` foi observado no Inspector após a criação persistir. O mesmo defeito está confirmado nos contratos dos outros DTOs abaixo:
   - `ProfileDetails`: campos do perfil são opcionais; `get_profile`, `create_profile` e `update_profile` podem retornar `null`. Em `create_profile`, a persistência termina antes de o cliente rejeitar a resposta; por isso a tool informa falha apesar de criar o perfil.
   - `ClaimDetails`: `participationId` é nulo para claim autônoma (`get_claim`, `create_claim`, `update_claim`).
@@ -30,7 +29,6 @@ A marca `[x]` significa que o arquivo foi lido integralmente. Arquivos ainda nã
 - [x] `src/main/java/io/github/wskr00/dianysma/core/audit/mcp/McpHttpLoggingConfiguration.java` — Sem erro real identificado.
 - [x] `src/main/java/io/github/wskr00/dianysma/core/audit/mcp/McpHttpLoggingFilter.java` — Sem erro real identificado.
 - [x] `src/main/java/io/github/wskr00/dianysma/core/audit/mcp/McpToolAuditLogger.java` — Sem erro real identificado.
-- [x] `src/main/java/io/github/wskr00/dianysma/core/security/SecurityConfiguration.java` — BUG REAL: os authorities aceitos são fixos (`dianysma/knowledge.read` e `.write`), mas o fluxo local de Cognito usa resource binding para `http://localhost:8000/mcp`; o Cognito rejeitou a combinação antiga e, se o resource server agora usa o identificador URL sugerido, o backend também rejeitará os scopes emitidos. Integração precisa alinhar URI do recurso, scopes no app client e authorities do servidor.
 
 ### 2. Enums do domínio
 
@@ -119,16 +117,16 @@ A marca `[x]` significa que o arquivo foi lido integralmente. Arquivos ainda nã
 
 ### 9. Serviços de aplicação
 
-- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/ClaimService.java` — BUG REAL: exige os scopes fixos `dianysma/...`; conflita com o resource binding Cognito/MCP se o app client emite scopes prefixados pelo URI do recurso. Exclusão do vetor aguardando cruzamento da FK.
-- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/EducationService.java` — BUG REAL: exige os scopes fixos `dianysma/...`; conflita com resource binding. DTO de saída nullable também quebra o output schema.
-- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/ExperienceService.java` — BUG REAL: exige os scopes fixos `dianysma/...`; conflita com resource binding. DTO de saída tem campos nulos a confirmar com a tool.
-- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/KnowledgeSearchService.java` — BUG REAL: exige o scope fixo `dianysma/knowledge.read`; conflita com resource binding Cognito/MCP.
-- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/LanguageService.java` — BUG REAL: exige scopes fixos `dianysma/...`; conflita com resource binding Cognito/MCP.
-- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/OrganizationService.java` — BUG REAL: exige scopes fixos `dianysma/...`; conflita com resource binding Cognito/MCP.
-- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/ParticipationService.java` — BUG REAL: exige scopes fixos `dianysma/...`; conflita com resource binding. DTO de saída nullable também quebra o output schema.
+- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/ClaimService.java` — Sem verificação de autenticação/autorização local; exclusão do vetor aguardando cruzamento da FK.
+- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/EducationService.java` — Sem verificação de autenticação/autorização local; DTO de saída nullable também quebra o output schema.
+- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/ExperienceService.java` — Sem verificação de autenticação/autorização local; DTO de saída tem campos nulos a confirmar com a tool.
+- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/KnowledgeSearchService.java` — Sem verificação de autenticação/autorização local.
+- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/LanguageService.java` — Sem verificação de autenticação/autorização local.
+- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/OrganizationService.java` — Sem verificação de autenticação/autorização local.
+- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/ParticipationService.java` — Sem verificação de autenticação/autorização local; DTO de saída nullable também quebra o output schema.
 - [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/ProfileService.java` — BUG REAL no retorno de `get_profile`/`create_profile` está em `ProfileDetails` (schema de saída); a migração tem índice singleton que protege corridas de criação.
-- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/ProjectService.java` — BUG REAL: exige scopes fixos `dianysma/...`; conflita com resource binding. Exclusão/relacionamentos aguardam cruzamento da FK; DTO de saída tem campos nulos a confirmar com a tool.
-- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/SkillService.java` — BUG REAL: exige scopes fixos `dianysma/...`; conflita com resource binding. A migração tem índice único case-insensitive que protege a corrida de criação.
+- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/ProjectService.java` — Sem verificação de autenticação/autorização local; exclusão/relacionamentos aguardam cruzamento da FK; DTO de saída tem campos nulos a confirmar com a tool.
+- [x] `src/main/java/io/github/wskr00/dianysma/knowledge/service/SkillService.java` — Sem verificação de autenticação/autorização local; a migração tem índice único case-insensitive que protege a corrida de criação.
 
 ### 10. Ferramentas MCP
 
@@ -146,7 +144,7 @@ A marca `[x]` significa que o arquivo foi lido integralmente. Arquivos ainda nã
 
 ### 11. Recursos da aplicação e migração
 
-- [x] `src/main/resources/application.yml` — BUG REAL: a configuração fixa audience/resource em `MCP_RESOURCE_URI`, mas os scopes OAuth exigidos em `SecurityConfiguration` e nos serviços são `dianysma/knowledge.read/write`; o fluxo Cognito com resource binding exibiu rejeição desses custom scopes. Alinhar a associação dos scopes ao recurso e as authorities validadas.
+- [x] `src/main/resources/application.yml` — Configuração de OAuth/JWT removida; issuer, audience e scope são validados pelo AgentCore fora do processo Java.
 - [x] `src/main/resources/db/migration/V1__initial_schema.sql` — Sem erro real de integridade identificado; índices únicos e FKs confirmam as proteções citadas nos serviços, incluindo a cascata da projeção vetorial.
 
 ### 12. Testes existentes (leitura estática)
@@ -173,7 +171,7 @@ A marca `[x]` significa que o arquivo foi lido integralmente. Arquivos ainda nã
 ### 14. Documentação e diagramas
 
 - [x] `docs/architecture-components.mmd` — Sem erro real identificado no diagrama de componentes.
-- [x] `docs/architecture-overview.md` — BUG REAL de documentação: descreve scopes `dianysma/knowledge.*` junto ao uso de resource binding, configuração que não correspondeu ao fluxo Cognito observado; ver achado de segurança.
+- [x] `docs/architecture-overview.md` — A arquitetura Cognito/AgentCore foi atualizada para o scope único e validação JWT externa ao processo Java.
 - [x] `docs/career-knowledge-class-diagram.md` — BUG REAL de documentação: responsabilidades e métodos do subsistema vetorial estão desatualizados; ver achado acima.
 - [x] `docs/career-knowledge-class-diagram.mmd` — BUG REAL de documentação: replica o diagrama desatualizado do `.md`, inclusive as responsabilidades do `KnowledgeVectorStore` e métodos inexistentes do repositório.
 - [x] `docs/mcp-tool-contract.md` — BUG REAL de documentação: não registra que os DTOs opcionais retornam `null` enquanto o output schema gerado declara campos como não anuláveis; ver achado de schema MCP.

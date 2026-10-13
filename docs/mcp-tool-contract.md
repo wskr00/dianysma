@@ -12,7 +12,7 @@
 - As respostas são DTOs, nunca entidades JPA. Busca semântica retorna IDs estáveis para que o agente leia o registro canônico antes de usá-lo ou alterá-lo.
 - Campos opcionais nas respostas aceitam `null` no schema MCP, de acordo com a nulabilidade das entidades; isso evita rejeitar uma resposta depois de a operação já ter persistido a alteração.
 - Listagens e buscas retornam um objeto estruturado com uma coleção nomeada: `claims`, `educations`, `experiences`, `languages`, `organizations`, `participations`, `projects`, `results` ou `skills`. A coleção pode estar vazia.
-- Os serviços verificam escopos de leitura e escrita. As hints MCP descrevem a operação para o cliente, mas não substituem autorização no servidor.
+- O AgentCore autoriza a invocação MCP antes de encaminhá-la. As hints MCP descrevem a operação para o cliente, mas não são controles de acesso.
 
 ## Ferramentas
 
@@ -41,11 +41,11 @@ Nas atualizações de experiência, projeto, participação, formação e idioma
 
 ## Hints de comportamento
 
-As ferramentas de consulta e busca declaram `readOnlyHint=true`; as ferramentas de escrita declaram `readOnlyHint=false`. Criações declaram `destructiveHint=false` porque apenas acrescentam registros. Atualizações e exclusões declaram `destructiveHint=true`: atualizações podem substituir valores existentes ou limpar campos omitidos, e exclusões removem registros. Confirmações ou avisos exibidos pelo cliente para essas operações são esperados. Essas annotations são hints para o cliente, não controles de autorização; a proteção efetiva permanece nos escopos exigidos pelo servidor.
+As ferramentas de consulta e busca declaram `readOnlyHint=true`; as ferramentas de escrita declaram `readOnlyHint=false`. Criações declaram `destructiveHint=false` porque apenas acrescentam registros. Atualizações e exclusões declaram `destructiveHint=true`: atualizações podem substituir valores existentes ou limpar campos omitidos, e exclusões removem registros. Confirmações ou avisos exibidos pelo cliente para essas operações são esperados. Essas annotations são hints para o cliente, não controles de autorização.
 
 O catálogo de competências não oferece atualização ou exclusão nesta versão: renomear uma competência altera os embeddings das Claims associadas, e removê-la pode apagar vínculos profissionais. Uma futura operação de manutenção deverá reindexar os fatos relacionados e tratar vínculos explicitamente.
 
-Por padrão, `dianysma/knowledge.read` é exigido nas ferramentas de consulta, busca e listagem, e `dianysma/knowledge.write` para criação, atualização e exclusão. Os valores são configuráveis por `KNOWLEDGE_READ_SCOPE` e `KNOWLEDGE_WRITE_SCOPE`; devem corresponder exatamente aos scopes emitidos no claim `scope` do access token. O conversor JWT mapeia esses scopes para authorities internas, que o filtro HTTP e cada serviço verificam; um token somente de leitura não autoriza escrita e vice-versa.
+O acesso MCP usa um único scope: `knowledge.access`; no Cognito, o valor completo emitido no access token é `<RESOURCE_SERVER_IDENTIFIER>/knowledge.access`. O `customJWTAuthorizer` do AgentCore valida esse scope, a audience, o `client_id` autorizado e o issuer antes de encaminhar a chamada. A aplicação não interpreta o JWT nem diferencia permissões entre ferramentas; todas as 41 ferramentas ficam disponíveis ao cliente autorizado pelo Runtime.
 
 ## Busca e projeção vetorial
 
@@ -62,8 +62,9 @@ Por padrão, `dianysma/knowledge.read` é exigido nas ferramentas de consulta, b
 
 - Entradas inválidas e referências inexistentes retornam mensagens acionáveis em português.
 - Falhas inesperadas de persistência ou embedding retornam mensagem genérica ao cliente; detalhes internos são registrados no log do servidor.
-- O endpoint MCP exige um dos escopos de conhecimento, e cada serviço exige o escopo específico da operação.
-- Cognito e o authorizer do AgentCore restringem quais identidades podem obter e usar os tokens aceitos pelo serviço.
+- O AgentCore exige um JWT válido para invocações externas e restringe o acesso por issuer, audience, Client ID e scope `knowledge.access`.
+- O Client ID identifica o App Client, não necessariamente um usuário. Restrinja os usuários no Cognito ou acrescente validação de claim de identidade no AgentCore quando outras pessoas puderem obter tokens desse Client ID.
+- Mantenha o container acessível apenas pelo Runtime ou em rede privada. Não permita invocação anônima e não exponha o container diretamente sem proteção equivalente.
 
 ## Recursos e prompts
 

@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -34,7 +33,6 @@ public class ExperienceService {
 	private final ParticipationRepository participationRepository;
 	private final KnowledgeVectorIndexer knowledgeVectorIndexer;
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public ExperienceDetails get(@NotNull UUID experienceId) {
 		return this.experienceRepository.findDetailedById(experienceId)
@@ -42,7 +40,6 @@ public class ExperienceService {
 				.orElseThrow(() -> new KnowledgeNotFoundException("Experiência não encontrada."));
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public List<ExperienceDetails> list(@NotNull @Valid ListKnowledgeRecordsCommand command) {
 		return this.experienceRepository.findAllByOrderByUpdatedAtDesc(toLimit(command.limit()))
@@ -51,7 +48,6 @@ public class ExperienceService {
 				.toList();
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ExperienceDetails create(@NotNull @Valid ExperienceCommand command) {
 		Experience experience = new Experience(resolveOrganization(command.employerId(), "empregadora"),
@@ -60,7 +56,6 @@ public class ExperienceService {
 		return toDetails(this.experienceRepository.saveAndFlush(experience));
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public ExperienceDetails update(@NotNull UUID experienceId, @NotNull @Valid ExperienceCommand command) {
 		Experience experience = this.experienceRepository.findDetailedById(experienceId)
@@ -77,7 +72,6 @@ public class ExperienceService {
 		return toDetails(experience);
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public DeleteResult delete(@NotNull UUID experienceId) {
 		Experience experience = this.experienceRepository.findById(experienceId).orElse(null);

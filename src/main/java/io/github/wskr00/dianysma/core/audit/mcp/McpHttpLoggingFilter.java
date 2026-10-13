@@ -4,9 +4,6 @@ import java.io.IOException;
 import java.util.UUID;
 
 import org.slf4j.MDC;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import jakarta.servlet.FilterChain;
@@ -25,7 +22,6 @@ final class McpHttpLoggingFilter extends OncePerRequestFilter {
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 		String requestId = UUID.randomUUID().toString();
-		String subject = authenticatedSubject();
 		String previousRequestId = MDC.get(REQUEST_ID_MDC_KEY);
 		long startedAt = System.nanoTime();
 
@@ -40,7 +36,7 @@ final class McpHttpLoggingFilter extends OncePerRequestFilter {
 			throw exception;
 		} finally {
 			try {
-				logRequest(request, response, startedAt, subject, failure);
+				logRequest(request, response, startedAt, failure);
 			} finally {
 				if (previousRequestId == null) {
 					MDC.remove(REQUEST_ID_MDC_KEY);
@@ -51,16 +47,8 @@ final class McpHttpLoggingFilter extends OncePerRequestFilter {
 		}
 	}
 
-	private static String authenticatedSubject() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (authentication instanceof JwtAuthenticationToken jwtAuthentication) {
-			return jwtAuthentication.getToken().getSubject();
-		}
-		return null;
-	}
-
 	private static void logRequest(HttpServletRequest request, HttpServletResponse response, long startedAt,
-			String subject, Throwable failure) {
+			Throwable failure) {
 		int status = response.getStatus();
 		String outcome = failure != null || status >= HttpServletResponse.SC_BAD_REQUEST ? "failure" : "success";
 
@@ -73,9 +61,6 @@ final class McpHttpLoggingFilter extends OncePerRequestFilter {
 				.addKeyValue("http.response.status_code", status);
 		if (failure != null) {
 			event.addKeyValue("error.type", failure.getClass().getSimpleName());
-		}
-		if (subject != null && !subject.isBlank()) {
-			event.addKeyValue("user.id", subject);
 		}
 		event.log("Requisição HTTP MCP concluída");
 	}

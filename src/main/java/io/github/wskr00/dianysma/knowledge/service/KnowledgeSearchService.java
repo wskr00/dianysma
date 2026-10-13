@@ -7,7 +7,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -19,7 +18,6 @@ public class KnowledgeSearchService {
 	private static final int DEFAULT_LIMIT = 5;
 	private final KnowledgeVectorStore knowledgeVectorStore;
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	public List<KnowledgeSearchHit> search(@NotNull @Valid SearchKnowledgeCommand command) {
 		int limit = command.limit() == null ? DEFAULT_LIMIT : command.limit();
 		return this.knowledgeVectorStore.search(command.query().trim(), limit);

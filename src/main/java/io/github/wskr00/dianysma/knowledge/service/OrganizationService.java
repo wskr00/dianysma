@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -34,7 +33,6 @@ public class OrganizationService {
 	private final ProjectRepository projectRepository;
 	private final KnowledgeVectorIndexer knowledgeVectorIndexer;
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public OrganizationDetails get(@NotNull UUID organizationId) {
 		return this.organizationRepository.findById(organizationId)
@@ -42,7 +40,6 @@ public class OrganizationService {
 				.orElseThrow(() -> new KnowledgeNotFoundException("Organização não encontrada."));
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_READ')")
 	@Transactional(readOnly = true)
 	public List<OrganizationDetails> search(@NotNull @Valid SearchOrganizationsCommand command) {
 		Limit limit = Limit.of(command.limit() == null ? DEFAULT_LIMIT : command.limit());
@@ -52,14 +49,12 @@ public class OrganizationService {
 				.toList();
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public OrganizationDetails create(@NotNull @Valid CreateOrganizationCommand command) {
 		Organization organization = this.organizationRepository.saveAndFlush(new Organization(command.name().strip()));
 		return toDetails(organization);
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public OrganizationDetails update(@NotNull @Valid UpdateOrganizationCommand command) {
 		Organization organization = this.organizationRepository.findById(command.organizationId())
@@ -70,7 +65,6 @@ public class OrganizationService {
 		return toDetails(organization);
 	}
 
-	@PreAuthorize("hasAuthority('KNOWLEDGE_WRITE')")
 	@Transactional
 	public DeleteResult delete(@NotNull UUID organizationId) {
 		Organization organization = this.organizationRepository.findById(organizationId).orElse(null);

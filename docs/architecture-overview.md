@@ -174,25 +174,35 @@ O container do AgentCore chama o servidor Spring na porta 8000. O banco permanec
 
 ### Integração com AWS
 
-A aplicação Java não precisa de Spring Cloud AWS nem do AWS SDK para autenticação. O Cognito emite os tokens OAuth; o AgentCore Runtime valida os JWTs na entrada pública; e o Spring Security atua como OAuth2 Resource Server dentro da aplicação.
+A aplicação Java não autentica tokens. O Cognito emite tokens OAuth e o AgentCore Runtime V2 valida cada invocação com `customJWTAuthorizer` antes de encaminhar o tráfego ao servidor MCP.
 
 ## 8. Segurança e autenticação
 
 O fluxo previsto é:
 
-1. O cliente MCP inicia Authorization Code com PKCE no Cognito, incluindo `resource=MCP_RESOURCE_URI` conforme o resource indicator do MCP.
-2. Cognito autentica a conta permitida e emite um access token cujo `aud` identifica esse recurso e cujo `scope` contém permissões de leitura e/ou escrita.
+1. O cliente MCP inicia Authorization Code com PKCE no Cognito, solicitando o recurso MCP e o scope `knowledge.access`.
+2. Cognito autentica a conta permitida e emite um access token destinado ao recurso MCP, com o scope `<RESOURCE_SERVER_IDENTIFIER>/knowledge.access`.
 3. O cliente envia o bearer token ao endpoint MCP do AgentCore Runtime.
-4. O authorizer do Runtime valida o emissor, a audience, o cliente e os scopes antes de encaminhar a chamada. A configuração do Runtime deve encaminhar o header `Authorization` ao container.
-5. Spring Security valida novamente assinatura, validade, emissor e audience do access token, exige um scope de Career Knowledge e não cria sessão.
+4. O `customJWTAuthorizer` valida assinatura e validade do JWT, issuer pela URL de discovery, audience, `client_id` e scope permitido. Somente então o Runtime encaminha a chamada ao container.
 
-O User Pool deve permitir somente a conta autorizada; o login Google pode ser configurado como provedor federado. A restrição de identidade fica na configuração do Cognito e do AgentCore, sem usuário ou e-mail hardcoded no código. O backend não implementa authorization server, login, cookies ou sessão. A validação no Spring Security também protege a aplicação caso uma chamada alcance o container sem passar pelo authorizer público.
+Configure o App Client para permitir somente o scope customizado `knowledge.access` do Resource Server. Use como identificador do Resource Server a URI de invocação do AgentCore sem `?qualifier=DEFAULT`; o valor completo do scope passa a ser `<RESOURCE_SERVER_IDENTIFIER>/knowledge.access`. Configure o authorizer do Runtime com a URL OIDC `https://cognito-idp.<region>.amazonaws.com/<user-pool-id>/.well-known/openid-configuration`, audience igual ao valor `aud` emitido para esse recurso, o Client ID exato do App Client em `allowedClients` e o scope completo em `allowedScopes`. Os campos configurados são cumulativos: quando definidos, audience, client e scope precisam corresponder.
 
-Há dois metadados distintos. O Cognito publica o OpenID Provider Metadata em `<COGNITO_ISSUER_URI>/.well-known/openid-configuration`, com os endpoints do authorization server e as chaves públicas. O AgentCore Runtime, como entrada pública do servidor MCP, publica o Protected Resource Metadata e o anuncia no desafio `WWW-Authenticate` com `resource_metadata`. O Spring Security não duplica essa metadata: no container, ele atua somente como OAuth2 Resource Server, validando os tokens encaminhados pelo Runtime. Em produção, o endpoint do container não deve ser exposto diretamente.
+O formato esperado no Runtime é:
 
-Os scopes padrão são `dianysma/knowledge.read` e `dianysma/knowledge.write`. `KNOWLEDGE_READ_SCOPE` e `KNOWLEDGE_WRITE_SCOPE` podem substituí-los por ambiente; configure os valores exatamente como aparecem no claim `scope` do access token emitido pelo Cognito. O conversor JWT mapeia esses scopes para as authorities internas `KNOWLEDGE_READ` e `KNOWLEDGE_WRITE`; o filtro HTTP e os serviços usam essas authorities para autorizar cada operação.
+```json
+{
+  "customJWTAuthorizer": {
+    "discoveryUrl": "https://cognito-idp.<region>.amazonaws.com/<user-pool-id>/.well-known/openid-configuration",
+    "allowedAudience": ["<RESOURCE_SERVER_IDENTIFIER>"],
+    "allowedClients": ["<COGNITO_APP_CLIENT_ID>"],
+    "allowedScopes": ["<RESOURCE_SERVER_IDENTIFIER>/knowledge.access"]
+  }
+}
+```
 
-`COGNITO_ISSUER_URI` deve ser o issuer do User Pool (por exemplo, `https://cognito-idp.<region>.amazonaws.com/<user-pool-id>`). `MCP_RESOURCE_URI` deve ser exatamente o identificador HTTPS do servidor MCP usado no parâmetro OAuth `resource`, na audience validada pelo Cognito, AgentCore e Spring Security.
+O App Client identifica uma aplicação, não necessariamente uma pessoa. Restrinja o User Pool e os fluxos de login à conta pretendida. Se outras pessoas puderem obter tokens com esse mesmo Client ID, acrescente uma condição de identidade em `customClaims` (por exemplo, um claim estável do usuário) e não dependa de `allowedClients` como identidade individual. O endpoint do container deve aceitar tráfego somente da infraestrutura do Runtime ou ficar em rede privada; não o exponha diretamente sem proteção equivalente. Não habilite modo anônimo no Runtime. Não há validação JWT nem autorização por usuário dentro da aplicação.
+
+O Spring AI atende `ping`, `initialize`, `tools/list` e `tools/call` em `POST /mcp` usando transporte Stateless Streamable HTTP. O endpoint MCP não tem exceção local de health check: a autenticação de entrada acontece antes, no AgentCore.
 
 ## 9. Compatibilidade MCP
 
@@ -202,7 +212,7 @@ A especificação MCP `2026-07-28` é posterior ao alvo suportado pela stack esc
 
 ## 10. Configuração local
 
-Copie `.env.example` para `.env` e ajuste as credenciais locais. O Compose lê `DATABASE_NAME`, `DATABASE_USER` e `DATABASE_PASSWORD`; a aplicação lê também `DATABASE_HOST`, `DATABASE_PORT`, `GEMINI_API_KEY`, `COGNITO_ISSUER_URI`, `MCP_RESOURCE_URI`, `KNOWLEDGE_READ_SCOPE` e `KNOWLEDGE_WRITE_SCOPE`. O issuer e o resource URI são obrigatórios para iniciar o servidor protegido. No ambiente do AgentCore, os valores de produção devem vir de configuração segura do runtime.
+Copie `.env.example` para `.env` e ajuste as credenciais locais. O Compose lê `DATABASE_NAME`, `DATABASE_USER` e `DATABASE_PASSWORD`; a aplicação lê também `DATABASE_HOST`, `DATABASE_PORT` e `GEMINI_API_KEY`. Cognito e AgentCore são configurados fora do processo Java; não há issuer, audience ou scope de autenticação no `application.yml`.
 
 ## 11. Decisões ainda abertas
 
