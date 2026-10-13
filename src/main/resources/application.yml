@@ -32,14 +32,14 @@ spring:
         oauth2:
             resourceserver:
                 jwt:
-                    issuer-uri: ${COGNITO_ISSUER_URI}
+                    issuer-uri: ${COGNITO_ISSUER_URI:}
                     audiences:
-                        - ${MCP_RESOURCE_URI}
+                        - ${MCP_RESOURCE_URI:}
     ai:
         google:
             genai:
                 embedding:
-                    api-key: ${GEMINI_API_KEY}
+                    api-key: ${GEMINI_API_KEY:}
                     text:
                         model: ${GEMINI_EMBEDDING_MODEL:gemini-embedding-2}
                         dimensions: ${GEMINI_EMBEDDING_DIMENSIONS:1536}
