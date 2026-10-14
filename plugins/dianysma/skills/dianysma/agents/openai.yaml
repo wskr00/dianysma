@@ -1,7 +1,7 @@
 interface:
   display_name: "Dianysma"
   short_description: "Consulte e use seu histórico profissional"
-  default_prompt: "Use $dianysma para consultar meu histórico profissional e preparar um currículo ou uma entrevista."
+  default_prompt: "Use $dianysma para registrar uma experiência profissional, preparar um currículo para uma vaga ou me ajudar a preparar uma entrevista."
 
 policy:
   allow_implicit_invocation: true

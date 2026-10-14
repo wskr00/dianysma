@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "dianysma",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Ajuda a consultar e manter seu histórico profissional e a usá-lo em currículos, entrevistas e análises de vagas.",
   "author": {
     "name": "Lucas Christian",
@@ -17,17 +17,25 @@
   ],
   "extensions": {
     "com.openai": {
+      "apps": "./.app.json",
       "interface": {
         "displayName": "Dianysma",
         "shortDescription": "Histórico profissional",
         "longDescription": "Consulte e mantenha seu histórico profissional no Dianysma. Use os fatos registrados para preparar currículos, respostas de entrevista e comparar seu perfil com vagas. Quando faltarem dados, a resposta aponta a lacuna em vez de presumir informações.",
         "developerName": "Lucas Christian",
         "category": "Productivity",
+        "logo": "./assets/dianysma-logo.png",
+        "composerIcon": "./assets/dianysma-logo.png",
+        "brandColor": "#0063FC",
         "capabilities": [
           "Read",
           "Write"
         ],
-        "defaultPrompt": "Use o Dianysma para consultar ou atualizar meu conhecimento profissional e preparar currículos e entrevistas com base nos fatos registrados."
+        "defaultPrompt": [
+          "Quero registrar uma experiência profissional no meu histórico.",
+          "Preciso montar um currículo direcionado a uma vaga.",
+          "Quero me preparar para uma entrevista de emprego."
+        ]
       }
     }
   }
