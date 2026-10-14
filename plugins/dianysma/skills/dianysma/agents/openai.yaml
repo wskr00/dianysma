@@ -1,0 +1,15 @@
+interface:
+  display_name: "Dianysma"
+  short_description: "Consulte e use seu histórico profissional"
+  default_prompt: "Use $dianysma para consultar meu histórico profissional e preparar um currículo ou uma entrevista."
+
+policy:
+  allow_implicit_invocation: true
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "dianysma"
+      description: "Servidor MCP do Dianysma para consultar e manter o histórico profissional"
+      transport: "streamable_http"
+      url: "https://d3l8v5m4gwzgdn.cloudfront.net/mcp"

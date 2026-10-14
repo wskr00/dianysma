@@ -18,10 +18,10 @@ O MCP fornece operações e registros estruturados; a skill ensina o agente a es
 
 ## Formato e localização
 
-A skill local do Codex ficará em `.agents/skills/dianysma/`. O nome da pasta deve corresponder ao `name` do frontmatter, que será `dianysma`. A estrutura interna segue o formato portátil Agent Skills:
+A skill é distribuída como parte do plugin portátil em `plugins/dianysma/skills/dianysma/`. O nome da pasta corresponde ao `name` do frontmatter: `dianysma`. A estrutura interna segue o formato Agent Skills:
 
 ```text
-.agents/skills/dianysma/
+plugins/dianysma/skills/dianysma/
 ├── SKILL.md
 └── references/
     ├── knowledge-model.md
@@ -71,4 +71,4 @@ Depois de uma primeira versão, serão observadas execuções completas e seus p
 
 ## Currículo e apresentação visual
 
-O asset HTML é uma referência visual e semântica, com dados fictícios; não fixa campos nem substitui a seleção de evidências. O agente adapta as seções ao objetivo e ao histórico, e gera PDF com os recursos disponíveis no ambiente — por exemplo, a skill `$pdf:pdf` no ChatGPT. Se não houver geração de PDF, pode entregar o HTML pronto para impressão. Não há script próprio de renderização. A pasta `skill/` da raiz não é usada; `.agents/skills/dianysma/` é a fonte de verdade da skill local do Codex.
+O asset HTML é uma referência visual e semântica, com dados fictícios; não fixa campos nem substitui a seleção de evidências. O agente adapta as seções ao objetivo e ao histórico, e gera PDF com os recursos disponíveis no ambiente — por exemplo, a skill `$pdf:pdf` no ChatGPT. Se não houver geração de PDF, pode entregar o HTML pronto para impressão. Não há script próprio de renderização. A skill versionada em `plugins/dianysma/skills/dianysma/` é a fonte de verdade do pacote.

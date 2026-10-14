@@ -138,21 +138,26 @@ O modelo de domínio permanece o descrito no diagrama de classes:
 
 O modelo de embedding decidido é Gemini Embedding 2 com 1536 dimensões, usando índice HNSW e distância cosseno no pgvector. O `PgVectorStore` terá `initialize-schema=false`; Flyway cria o schema técnico e as constraints PostgreSQL que JPA não expressa. A migração inicial continua em `V1__initial_schema.sql` enquanto o projeto ainda está em desenvolvimento; o banco local pode ser recriado quando essa V1 mudar.
 
-## 6. Skill e fluxos locais
+## 6. Plugin e skill
 
-A skill é executada no cliente do agente e não no AgentCore. A estrutura alvo é:
+A skill é executada no cliente do agente e não no AgentCore. O pacote portátil junta as instruções da skill à conexão com o servidor MCP remoto:
 
 ```text
-.agents/skills/dianysma/
-├── SKILL.md
-├── references/
-└── assets/
-    └── resume-style-reference.html
+plugins/dianysma/
+├── plugin.json
+├── mcp.json
+└── skills/dianysma/
+    ├── SKILL.md
+    ├── references/
+    └── assets/
+        └── resume-style-reference.html
 ```
+
+O `plugin.json` identifica e descreve o plugin; `mcp.json` configura o servidor Streamable HTTP existente; `skills/dianysma/` contém as instruções, referências e assets usados pelo agente. O pacote apenas conecta ao serviço existente: não cria outro servidor nem substitui a autenticação de entrada do AgentCore.
 
 O `SKILL.md` orienta o agente a recuperar e manter conhecimento pelo MCP, escolher fatos verdadeiros para um currículo, apoiar preparação para entrevistas e usar a referência visual quando apresentar o documento. A skill não acessa PostgreSQL diretamente, não tem um renderizador próprio e não contém funcionalidades de coleta de vagas. A geração do PDF depende dos recursos do cliente do agente; se não houver um gerador disponível, o agente pode entregar HTML pronto para impressão.
 
-**Estado do checkout:** a skill local está em `.agents/skills/dianysma/`. A pasta `skill/` da raiz não é usada.
+**Estado do checkout:** a fonte da skill, o manifesto portátil e a URL MCP estão em `plugins/dianysma/`. A autorização OAuth é anunciada pelo endpoint CloudFront e processada pelo cliente MCP; não há credenciais no pacote.
 
 ## 7. Execução e infraestrutura
 
@@ -219,7 +224,7 @@ Copie `.env.example` para `.env` e ajuste as credenciais locais. O Compose lê `
 - Provisionamento e recuperação segura de segredos no runtime.
 - Estratégia de reindexação retomável e consistência transacional entre JPA e `PgVectorStore`.
 - Pipeline de build e publicação do container nativo ARM64 para AgentCore.
-- Estrutura e conteúdo versionados da skill `dianysma`.
+- Validação ponta a ponta do fluxo OAuth do plugin em um host cliente.
 
 ## 12. Documentos relacionados
 

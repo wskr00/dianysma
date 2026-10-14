@@ -166,7 +166,6 @@ A marca `[x]` significa que o arquivo foi lido integralmente. Arquivos ainda nã
 - [x] `gradlew` — Script wrapper POSIX lido; sem erro real identificado.
 - [x] `gradlew.bat` — Script wrapper Windows lido; sem erro real identificado.
 - [x] `settings.gradle` — Sem erro real identificado.
-- [x] `skill/.gitkeep` — Arquivo vazio usado como placeholder; sem erro real identificado.
 
 ### 14. Documentação e diagramas
 
