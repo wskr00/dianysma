@@ -10,7 +10,7 @@ O Dianysma armazena, organiza e recupera conhecimento profissional pessoal para 
 
 O único domínio do backend é **Career Knowledge**: perfil, organizações, experiências, projetos, participações, claims, competências, formação, idiomas e suas projeções para busca vetorial.
 
-O frontend Angular, a API REST de negócio e o módulo Job Discovery foram removidos. Pesquisas de vagas acontecem sob demanda no próprio agente, que pode comparar os resultados com fatos recuperados pelo MCP. Currículos e PDFs continuam sendo gerados localmente pela skill.
+O frontend Angular, a API REST de negócio e o módulo Job Discovery foram removidos. Pesquisas de vagas acontecem sob demanda no próprio agente, que pode comparar os resultados com fatos recuperados pelo MCP. A skill orienta a composição e fornece uma referência HTML de estilo; o agente gera o PDF com os recursos disponíveis no cliente.
 
 ## 2. Componentes e fluxo
 
@@ -22,7 +22,7 @@ flowchart LR
         USER([Usuário])
         AGENT["Agente MCP externo"]
         SKILL["Skill dianysma\nSKILL.md + referências"]
-        RENDER["render_resume.py + Typst"]
+        STYLE["Referência visual HTML"]
         PDF["PDF local"]
     end
 
@@ -56,9 +56,9 @@ flowchart LR
     VSTORE --> DB
     CHUNK --> DB
     VSTORE --> EMB
-    AGENT --> RENDER
+    STYLE -->|"consultada como referência"| AGENT
     SKILL -. "orienta seleção dos fatos" .-> AGENT
-    RENDER --> PDF
+    AGENT --> PDF
     PDF --> USER
 ```
 
@@ -68,7 +68,7 @@ flowchart LR
 | --- | --- |
 | Agente externo | Pesquisar oportunidades com ferramentas próprias, usar o MCP e seguir as instruções da skill. |
 | Skill `dianysma` | Orientar consultas e alterações de Career Knowledge, seleção de claims, preparação para entrevistas e composição de currículos. |
-| `render_resume.py` + Typst | Gerar localmente um PDF a partir dos dados que o agente selecionou e estruturou. |
+| `assets/resume-style-reference.html` | Demonstrar hierarquia, tipografia e regras de impressão; o agente adapta a apresentação e gera o PDF com os recursos disponíveis no cliente. |
 | AgentCore Runtime | Expor o runtime MCP e validar os JWTs de entrada conforme a configuração de OAuth. |
 | Servidor Spring | Expor ferramentas MCP e aplicar os serviços e regras de Career Knowledge; não executa agentes nem pesquisa vagas. |
 | Neon PostgreSQL | Manter entidades canônicas e as tabelas de indexação vetorial. |
@@ -143,18 +143,16 @@ O modelo de embedding decidido é Gemini Embedding 2 com 1536 dimensões, usando
 A skill é executada no cliente do agente e não no AgentCore. A estrutura alvo é:
 
 ```text
-skill/
+.agents/skills/dianysma/
 ├── SKILL.md
 ├── references/
-├── scripts/
-│   └── render_resume.py
 └── assets/
-    └── resume.typ
+    └── resume-style-reference.html
 ```
 
-O `SKILL.md` orienta o agente a recuperar e manter conhecimento pelo MCP, escolher claims verdadeiras para um currículo, apoiar preparação para entrevistas e executar a renderização local. A skill não acessa PostgreSQL diretamente e não contém mais funcionalidades de coleta de vagas.
+O `SKILL.md` orienta o agente a recuperar e manter conhecimento pelo MCP, escolher fatos verdadeiros para um currículo, apoiar preparação para entrevistas e usar a referência visual quando apresentar o documento. A skill não acessa PostgreSQL diretamente, não tem um renderizador próprio e não contém funcionalidades de coleta de vagas. A geração do PDF depende dos recursos do cliente do agente; se não houver um gerador disponível, o agente pode entregar HTML pronto para impressão.
 
-**Estado do checkout:** não há atualmente uma pasta `skill/` versionada neste repositório. A arquitetura preserva essa capacidade como componente a ser incorporado; não havia arquivos da skill neste checkout para migrar.
+**Estado do checkout:** a skill local está em `.agents/skills/dianysma/`. A pasta `skill/` da raiz não é usada.
 
 ## 7. Execução e infraestrutura
 

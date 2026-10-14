@@ -3,7 +3,7 @@ flowchart LR
         USER([Usuário])
         AGENT["Agente MCP externo"]
         SKILL["Skill dianysma\nSKILL.md + referências"]
-        RENDER["render_resume.py + Typst"]
+        STYLE["Referência visual HTML"]
         PDF["PDF local"]
     end
 
@@ -37,7 +37,7 @@ flowchart LR
     VSTORE --> DB
     CHUNK --> DB
     VSTORE --> EMB
-    AGENT --> RENDER
+    STYLE -->|"consultada como referência"| AGENT
     SKILL -. "orienta seleção dos fatos" .-> AGENT
-    RENDER --> PDF
+    AGENT --> PDF
     PDF --> USER

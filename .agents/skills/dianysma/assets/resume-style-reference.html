@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Referência de estrutura e estilo para currículos profissionais."
+    >
+    <title>Referência de currículo</title>
+    <style>
+      /*
+       * Referência visual baseada em currículo clássico de uma coluna.
+       * Os nomes, organizações e fatos são exemplos fictícios. Substitua-os
+       * por informações recuperadas e confirmadas antes de entregar um currículo.
+       * O cabeçalho é conteúdo comum do documento, não cabeçalho de página.
+       */
+      @page {
+        size: A4;
+        margin: 17mm 18mm;
+      }
+
+      @layer reset, tokens, base, resume, print;
+
+      @layer reset {
+        *,
+        *::before,
+        *::after {
+          box-sizing: border-box;
+        }
+
+        body,
+        h1,
+        h2,
+        h3,
+        p,
+        ul {
+          margin: 0;
+        }
+
+        ul {
+          padding: 0;
+        }
+      }
+
+      @layer tokens {
+        :root {
+          color-scheme: light;
+
+          --paper: #fff;
+          --ink: #111;
+          --secondary-ink: #3f3f3f;
+          --rule: #666;
+          --font-sans: Arial, "Liberation Sans", Helvetica, sans-serif;
+
+          --text-body: 10pt;
+          --text-meta: 9.5pt;
+          --text-section: 10.5pt;
+          --text-role: 10pt;
+          --text-headline: 11pt;
+          --text-name: 20pt;
+
+          --leading-body: 1.2;
+          --leading-tight: 1.12;
+
+          --space-1: 3pt;
+          --space-2: 4pt;
+          --space-3: 6pt;
+          --space-4: 9pt;
+          --space-5: 12pt;
+        }
+      }
+
+      @layer base {
+        html {
+          background: var(--paper);
+          color: var(--ink);
+          font-family: var(--font-sans);
+          font-size: var(--text-body);
+          line-height: var(--leading-body);
+          text-size-adjust: 100%;
+        }
+
+        body {
+          min-width: 320px;
+          background: var(--paper);
+        }
+
+        a {
+          color: inherit;
+          text-decoration: none;
+          overflow-wrap: anywhere;
+        }
+
+        address {
+          font-style: normal;
+        }
+
+        time {
+          font-variant-numeric: tabular-nums;
+        }
+      }
+
+      @layer resume {
+        .resume {
+          width: min(100%, 210mm);
+          min-height: 297mm;
+          margin-inline: auto;
+          padding: 17mm 18mm;
+          background: var(--paper);
+        }
+
+        .resume-header {
+          margin-block-end: var(--space-5);
+          text-align: center;
+        }
+
+        .name {
+          font-size: var(--text-name);
+          font-weight: 700;
+          line-height: var(--leading-tight);
+        }
+
+        .headline {
+          margin-block-start: var(--space-2);
+          color: var(--secondary-ink);
+          font-size: var(--text-headline);
+          line-height: var(--leading-tight);
+        }
+
+        .contact-line {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: var(--space-1) var(--space-2);
+          margin-block-start: var(--space-2);
+          color: var(--secondary-ink);
+          font-size: var(--text-meta);
+        }
+
+        .contact-separator {
+          color: var(--rule);
+        }
+
+        .contact-profiles {
+          margin-block-start: var(--space-1);
+        }
+
+        .resume-section {
+          margin-block-start: var(--space-5);
+        }
+
+        .section-title {
+          margin-block-end: var(--space-3);
+          font-size: var(--text-section);
+          font-weight: 700;
+          line-height: var(--leading-tight);
+          text-transform: uppercase;
+        }
+
+        .entry + .entry {
+          margin-block-start: var(--space-4);
+        }
+
+        .entry-heading {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: baseline;
+          justify-content: space-between;
+          column-gap: var(--space-4);
+        }
+
+        .organization {
+          font-size: var(--text-body);
+          font-weight: 700;
+        }
+
+        .entry-dates {
+          font-size: var(--text-body);
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .role {
+          margin-block-start: var(--space-1);
+          color: var(--secondary-ink);
+          font-size: var(--text-role);
+          font-style: italic;
+        }
+
+        .highlights,
+        .knowledge-list {
+          padding-inline-start: 14pt;
+        }
+
+        .highlights {
+          margin-block-start: var(--space-2);
+        }
+
+        .highlights li + li,
+        .knowledge-list li + li {
+          margin-block-start: var(--space-1);
+        }
+
+        .knowledge-list li::marker,
+        .highlights li::marker {
+          color: var(--ink);
+        }
+
+        .education-degree {
+          margin-block-start: var(--space-1);
+          color: var(--secondary-ink);
+          font-style: italic;
+        }
+
+        @media screen and (max-width: 600px) {
+          .resume {
+            min-height: 100vh;
+            padding: 24px 20px;
+          }
+
+          .entry-heading {
+            column-gap: 8px;
+          }
+        }
+      }
+
+      @layer print {
+        @media print {
+          html,
+          body {
+            min-width: 0;
+            background: var(--paper);
+          }
+
+          .resume {
+            width: auto;
+            min-height: 0;
+            margin: 0;
+            padding: 0;
+          }
+
+          .resume-header,
+          .section-title,
+          .entry-heading,
+          .role {
+            break-after: avoid-page;
+          }
+
+          p,
+          li {
+            orphans: 2;
+            widows: 2;
+          }
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="resume">
+      <header class="resume-header">
+        <h1 class="name">Nome Sobrenome</h1>
+        <p class="headline">Desenvolvedor Full Stack | Java / Spring Boot | Angular</p>
+        <address aria-label="Contato">
+          <p class="contact-line">
+            <span>Ananindeua, PA</span>
+            <span class="contact-separator" aria-hidden="true">|</span>
+            <span>+55 (91) 9XXXX-XXXX</span>
+            <span class="contact-separator" aria-hidden="true">|</span>
+            <a href="mailto:nome.sobrenome@example.com">nome.sobrenome@example.com</a>
+          </p>
+          <p class="contact-line contact-profiles">
+            <a href="https://github.com/usuario">github.com/usuario</a>
+            <span class="contact-separator" aria-hidden="true">|</span>
+            <a href="https://linkedin.com/in/usuario">linkedin.com/in/usuario</a>
+          </p>
+        </address>
+      </header>
+
+      <main>
+        <section class="resume-section" aria-labelledby="profile-heading">
+          <h2 class="section-title" id="profile-heading">Perfil profissional</h2>
+          <p>
+            Desenvolvedor de software com experiência em aplicações web e serviços backend.
+            Trabalha com Java, Spring Boot, Angular e PostgreSQL, participando da construção,
+            integração e manutenção de sistemas.
+          </p>
+        </section>
+
+        <section class="resume-section" aria-labelledby="experience-heading">
+          <h2 class="section-title" id="experience-heading">Experiência</h2>
+
+          <article class="entry">
+            <header class="entry-heading">
+              <h3 class="organization">Empresa Exemplo Ltda.</h3>
+              <p class="entry-dates">
+                <time datetime="2023-09">set. 2023</time> - atual
+              </p>
+            </header>
+            <p class="role">Desenvolvedor Full Stack | Engenharia de Produto</p>
+            <ul class="highlights">
+              <li>Desenvolveu APIs com Java e Spring Boot e integrou os serviços à aplicação Angular.</li>
+              <li>Modelou dados relacionais em PostgreSQL e implementou alterações de schema versionadas.</li>
+              <li>Automatizou etapas de build e implantação com Docker e pipelines de CI/CD.</li>
+              <li>Colaborou em revisões de código, documentação técnica e suporte a aplicações em produção.</li>
+            </ul>
+          </article>
+
+          <article class="entry">
+            <header class="entry-heading">
+              <h3 class="organization">Organização Exemplo</h3>
+              <p class="entry-dates">
+                <time datetime="2021-03">mar. 2021</time> -
+                <time datetime="2023-08">ago. 2023</time>
+              </p>
+            </header>
+            <p class="role">Estagiário de Desenvolvimento</p>
+            <ul class="highlights">
+              <li>Implementou endpoints e melhorias em aplicações internas com Java e Spring.</li>
+              <li>Corrigiu defeitos reportados por usuários e registrou orientações de manutenção.</li>
+            </ul>
+          </article>
+        </section>
+
+        <section class="resume-section" aria-labelledby="contributions-heading">
+          <h2 class="section-title" id="contributions-heading">Contribuições open source</h2>
+          <ul class="highlights">
+            <li><strong>Projeto de inferência:</strong> contribuiu com melhorias incorporadas à documentação e às ferramentas do projeto.</li>
+            <li><strong>Biblioteca de dados:</strong> corrigiu uma incompatibilidade e adicionou um caso de teste à suíte mantida pela comunidade.</li>
+          </ul>
+        </section>
+
+        <section class="resume-section" aria-labelledby="knowledge-heading">
+          <h2 class="section-title" id="knowledge-heading">Conhecimentos</h2>
+          <ul class="knowledge-list">
+            <li><strong>Backend e APIs:</strong> Java, Spring Boot, Python, APIs REST e WebSocket</li>
+            <li><strong>Frontend:</strong> Angular, TypeScript e RxJS</li>
+            <li><strong>Banco de dados:</strong> PostgreSQL, SQL e Redis</li>
+            <li><strong>DevOps e CI/CD:</strong> Git, Docker, Kubernetes e pipelines de integração contínua</li>
+            <li><strong>Idiomas:</strong> Português nativo e Inglês intermediário</li>
+          </ul>
+        </section>
+
+        <section class="resume-section" aria-labelledby="education-heading">
+          <h2 class="section-title" id="education-heading">Formação</h2>
+          <article class="entry">
+            <header class="entry-heading">
+              <h3 class="organization">Universidade Exemplo</h3>
+              <p class="entry-dates">
+                <time datetime="2022-01">jan. 2022</time> -
+                <time datetime="2026-12">dez. 2026</time>
+              </p>
+            </header>
+            <p class="education-degree">Bacharelado em Ciência da Computação</p>
+          </article>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
