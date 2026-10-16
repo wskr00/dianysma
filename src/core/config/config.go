@@ -21,19 +21,21 @@ import (
 
 // Config is loaded once at startup. Precedence is process environment, .env, Secrets Manager, then defaults.
 type Config struct {
-	Port                  int    `env:"SERVER_PORT" envDefault:"8000"`
-	Endpoint              string `env:"MCP_ENDPOINT_PATH" envDefault:"/mcp"`
-	DatabaseHost          string `env:"DATABASE_HOST" envDefault:"127.0.0.1"`
-	DatabasePort          int    `env:"DATABASE_PORT" envDefault:"5432"`
-	DatabaseName          string `env:"DATABASE_NAME" envDefault:"dianysma"`
-	DatabaseUser          string `env:"DATABASE_USER" envDefault:"dianysma"`
-	DatabasePassword      string `env:"DATABASE_PASSWORD"`
-	DatabaseSSLMode       string `env:"DATABASE_SSL_MODE" envDefault:"verify-full"`
-	DatabaseMigrationHost string `env:"DATABASE_MIGRATION_HOST"`
-	DatabasePoolMax       int    `env:"DATABASE_POOL_MAX_SIZE" envDefault:"4"`
-	GeminiAPIKey          string `env:"GEMINI_API_KEY"`
-	EmbeddingModel        string `env:"GEMINI_EMBEDDING_MODEL" envDefault:"gemini-embedding-2"`
-	EmbeddingDimensions   int    `env:"GEMINI_EMBEDDING_DIMENSIONS" envDefault:"1536"`
+	Port                       int    `env:"SERVER_PORT" envDefault:"8000"`
+	Endpoint                   string `env:"MCP_ENDPOINT_PATH" envDefault:"/mcp"`
+	DisableLocalhostProtection bool   `env:"MCP_DISABLE_LOCALHOST_PROTECTION" envDefault:"false"`
+	AutoReindex                bool   `env:"KNOWLEDGE_AUTO_REINDEX" envDefault:"true"`
+	DatabaseHost               string `env:"DATABASE_HOST" envDefault:"127.0.0.1"`
+	DatabasePort               int    `env:"DATABASE_PORT" envDefault:"5432"`
+	DatabaseName               string `env:"DATABASE_NAME" envDefault:"dianysma"`
+	DatabaseUser               string `env:"DATABASE_USER" envDefault:"dianysma"`
+	DatabasePassword           string `env:"DATABASE_PASSWORD"`
+	DatabaseSSLMode            string `env:"DATABASE_SSL_MODE" envDefault:"verify-full"`
+	DatabaseMigrationHost      string `env:"DATABASE_MIGRATION_HOST"`
+	DatabasePoolMax            int    `env:"DATABASE_POOL_MAX_SIZE" envDefault:"4"`
+	GeminiAPIKey               string `env:"GEMINI_API_KEY"`
+	EmbeddingModel             string `env:"GEMINI_EMBEDDING_MODEL" envDefault:"gemini-embedding-2"`
+	EmbeddingDimensions        int    `env:"GEMINI_EMBEDDING_DIMENSIONS" envDefault:"1536"`
 }
 
 func Load(ctx context.Context) (Config, error) {

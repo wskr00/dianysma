@@ -50,7 +50,7 @@ O schema Go não adota o histórico Flyway. Use um banco local separado para com
 
 ## Configuração e infraestrutura
 
-As variáveis são exemplificadas em `.env.go.example`. O processo usa ambiente e `.env`; valores já definidos têm precedência sobre o segredo. Não são impressas credenciais nem valores que falharam no parser.
+As variáveis são exemplificadas em `.env.example`. O processo usa ambiente e `.env`; valores já definidos têm precedência sobre o segredo. Não são impressas credenciais nem valores que falharam no parser.
 
 - `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`: mesmos conceitos do Compose e do Java. A aplicação monta a conexão com escaping de credenciais.
 - `DATABASE_SSL_MODE`: padrão `verify-full` para conexões remotas; em desenvolvimento local, use `disable`. O container inclui as autoridades certificadoras do sistema.
@@ -58,6 +58,7 @@ As variáveis são exemplificadas em `.env.go.example`. O processo usa ambiente 
 - `DATABASE_MIGRATION_HOST`: necessário no segredo se `DATABASE_HOST` usa o pooler Neon. Goose usa advisory lock de sessão, então as migrações usam o host direto.
 - `AWS_SECRET_ID`: segredo JSON no Secrets Manager, acessado pela role do runtime e pelo SDK AWS. Substitui o `SPRING_CONFIG_IMPORT` da aplicação Java. A região vem do ambiente do runtime; não são necessárias chaves AWS estáticas no container.
 - `GEMINI_API_KEY`, `GEMINI_EMBEDDING_MODEL=gemini-embedding-2`, `GEMINI_EMBEDDING_DIMENSIONS=1536`: embeddings. A inicialização verifica se as dimensões coincidem com o schema.
+- `KNOWLEDGE_AUTO_REINDEX=true`: verifica e reindexa chunks com assinatura de modelo diferente durante a inicialização. Defina `false` para pular essa reindexação automática; `go run ./cmd/dianysma reindex` continua forçando a operação.
 
 Os timeouts, o pool ocioso e a execução de migrações usam padrões internos; não precisam de variáveis próprias. Para forçar uma reindexação completa, use `go run ./cmd/dianysma reindex`.
 

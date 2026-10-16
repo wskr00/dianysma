@@ -149,7 +149,7 @@ func newFixture(t *testing.T, db *gorm.DB) *fixture {
 	logger := slog.New(slog.NewJSONHandler(logs, nil))
 	server := mcpcontroller.NewServer(services, logger, "test", 5*time.Second)
 	mux := http.NewServeMux()
-	mux.Handle("/mcp", http.NewCrossOriginProtection().Handler(mcpcontroller.NewHandler(server, logger)))
+	mux.Handle("/mcp", http.NewCrossOriginProtection().Handler(mcpcontroller.NewHandler(server, logger, false)))
 	httpServer := httptest.NewServer(mux)
 	t.Cleanup(httpServer.Close)
 	session, err := mcp.NewClient(&mcp.Implementation{Name: "dianysma-integration", Version: "1"}, nil).Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpServer.URL + "/mcp"}, nil)

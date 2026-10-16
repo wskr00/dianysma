@@ -83,8 +83,12 @@ func run(ctx context.Context, logger *slog.Logger) (runErr error) {
 	repo := repository.New(db)
 	vectors := vector.NewStore(embedder, c.EmbeddingModel, c.EmbeddingDimensions)
 	indexer := vector.NewIndexer(vectors)
-	if err := vector.NewReindexer(repo, indexer, logger).Run(ctx, mode == "reindex"); err != nil {
-		return err
+	if c.AutoReindex || mode == "reindex" {
+		if err := vector.NewReindexer(repo, indexer, logger).Run(ctx, mode == "reindex"); err != nil {
+			return err
+		}
+	} else {
+		logger.InfoContext(ctx, "Reindexação automática desativada")
 	}
 	if mode == "reindex" {
 		return nil
@@ -96,7 +100,7 @@ func run(ctx context.Context, logger *slog.Logger) (runErr error) {
 	mcpServer := mcpcontroller.NewServer(services, logger, version, requestTimeout)
 	protection := http.NewCrossOriginProtection()
 	mux := http.NewServeMux()
-	mux.Handle(c.Endpoint, protection.Handler(mcpcontroller.NewHandler(mcpServer, logger)))
+	mux.Handle(c.Endpoint, protection.Handler(mcpcontroller.NewHandler(mcpServer, logger, c.DisableLocalhostProtection)))
 	serverCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	server := &http.Server{Addr: fmt.Sprintf(":%d", c.Port), Handler: mux,

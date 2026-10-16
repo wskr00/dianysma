@@ -33,9 +33,10 @@ func NewServer(services *service.Services, logger *slog.Logger, version string, 
 	return server
 }
 
-func NewHandler(server *mcp.Server, logger *slog.Logger) http.Handler {
+func NewHandler(server *mcp.Server, logger *slog.Logger, disableLocalhostProtection bool) http.Handler {
 	handler := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return server }, &mcp.StreamableHTTPOptions{
-		Stateless: true, JSONResponse: true, Logger: logger, MaxRequestBodyBytes: 1 << 20, PropagateRequestCancellation: true,
+		Stateless: true, JSONResponse: true, Logger: logger, MaxRequestBodyBytes: 1 << 20,
+		PropagateRequestCancellation: true, DisableLocalhostProtection: disableLocalhostProtection,
 	})
 	return mcpaudit.HTTP(logger, handler)
 }
