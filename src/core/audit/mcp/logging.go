@@ -106,13 +106,18 @@ func HTTP(logger *slog.Logger, next http.Handler) http.Handler {
 		if cause != nil || metrics.Code >= 500 {
 			level = slog.LevelError
 		}
-		attrs := []slog.Attr{slog.String("event.outcome", outcome), slog.String("http.request.id", id)}
+		attrs := []slog.Attr{
+			slog.Int("status", metrics.Code),
+			slog.Int64("duration_ms", metrics.Duration.Milliseconds()),
+			slog.String("event.outcome", outcome),
+			slog.String("http.request.id", id),
+		}
 		if errorType != "" {
 			attrs = append(attrs, slog.String("error.type", errorType))
 		}
 		if cause != nil {
 			attrs = append(attrs, slog.String("error", cause.Error()))
 		}
-		logger.LogAttrs(r.Context(), level, fmt.Sprintf("tool: %s, status: %d, duration: %dms", tool, metrics.Code, metrics.Duration.Milliseconds()), attrs...)
+		logger.LogAttrs(r.Context(), level, "tool: "+tool, attrs...)
 	})
 }
