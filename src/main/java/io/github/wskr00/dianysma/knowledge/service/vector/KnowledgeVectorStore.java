@@ -1,13 +1,14 @@
 package io.github.wskr00.dianysma.knowledge.service.vector;
 
-import io.github.wskr00.dianysma.knowledge.controller.dto.result.knowledge.KnowledgeSearchHit;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Component;
+
+import io.github.wskr00.dianysma.knowledge.controller.dto.result.knowledge.KnowledgeSearchHit;
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
@@ -28,16 +29,16 @@ public class KnowledgeVectorStore {
 
 	public List<KnowledgeSearchHit> search(String query, int limit) {
 		return this.vectorStore.similaritySearch(SearchRequest.builder()
-			.query(QUERY_PREFIX + query)
-			.topK(limit)
-			.build())
-			.stream()
-			.map(document -> new KnowledgeSearchHit(
-					UUID.fromString((String) document.getMetadata().get("sourceId")),
-					(String) document.getMetadata().get("sourceType"),
-					excerpt(document.getText()),
-					document.getScore()))
-			.toList();
+				.query(QUERY_PREFIX + query)
+				.topK(limit)
+				.build())
+				.stream()
+				.map(document -> new KnowledgeSearchHit(
+						UUID.fromString((String) document.getMetadata().get("sourceId")),
+						(String) document.getMetadata().get("sourceType"),
+						excerpt(document.getText()),
+						document.getScore()))
+				.toList();
 	}
 
 	private static String excerpt(String indexedText) {

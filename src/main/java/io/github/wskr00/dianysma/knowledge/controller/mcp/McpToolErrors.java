@@ -15,14 +15,12 @@ import lombok.NoArgsConstructor;
 final class McpToolErrors {
 
 	static <T> T call(String operation, Supplier<T> action) {
-		long startedAt = System.nanoTime();
+		McpToolAuditLogger.requested(operation);
 		try {
-			T result = action.get();
-			McpToolAuditLogger.succeeded(operation, System.nanoTime() - startedAt);
-			return result;
+			return action.get();
 		}
 		catch (InvalidKnowledgeInputException | KnowledgeNotFoundException exception) {
-			McpToolAuditLogger.failed(operation, System.nanoTime() - startedAt, exception.getClass());
+			McpToolAuditLogger.failed(operation, exception.getClass());
 			throw exception;
 		}
 		catch (ConstraintViolationException exception) {
@@ -32,15 +30,15 @@ final class McpToolErrors {
 					.collect(Collectors.joining(" "));
 			var translatedException = new InvalidKnowledgeInputException(
 					message.isBlank() ? "A validação dos dados informados falhou." : message);
-			McpToolAuditLogger.failed(operation, System.nanoTime() - startedAt, translatedException.getClass());
+			McpToolAuditLogger.failed(operation, translatedException.getClass());
 			throw translatedException;
 		}
 		catch (McpError exception) {
-			McpToolAuditLogger.failed(operation, System.nanoTime() - startedAt, exception.getClass());
+			McpToolAuditLogger.failed(operation, exception.getClass());
 			throw exception;
 		}
 		catch (RuntimeException exception) {
-			McpToolAuditLogger.failedUnexpectedly(operation, System.nanoTime() - startedAt, exception);
+			McpToolAuditLogger.failedUnexpectedly(operation, exception);
 			throw new IllegalStateException(
 					"Não foi possível concluir a operação devido a uma falha interna. Tente novamente mais tarde. Se o problema persistir, entre em contato com quem administra o servidor.");
 		}

@@ -1,5 +1,21 @@
 package io.github.wskr00.dianysma.knowledge.service.vector;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.model.google.genai.autoconfigure.embedding.GoogleGenAiTextEmbeddingProperties;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
 import io.github.wskr00.dianysma.knowledge.domain.Claim;
 import io.github.wskr00.dianysma.knowledge.domain.Education;
 import io.github.wskr00.dianysma.knowledge.domain.KnowledgeChunk;
@@ -10,22 +26,7 @@ import io.github.wskr00.dianysma.knowledge.repository.EducationRepository;
 import io.github.wskr00.dianysma.knowledge.repository.KnowledgeChunkRepository;
 import io.github.wskr00.dianysma.knowledge.repository.ParticipationRepository;
 import io.github.wskr00.dianysma.knowledge.service.exception.InvalidKnowledgeInputException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.model.google.genai.autoconfigure.embedding.GoogleGenAiTextEmbeddingProperties;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -121,10 +122,10 @@ public class KnowledgeVectorIndexer {
 		}
 
 		Document document = Document.builder()
-			.id(sourceId.toString())
-			.text(indexedText)
-			.metadata(Map.of("sourceType", sourceType, "sourceId", sourceId.toString()))
-			.build();
+				.id(sourceId.toString())
+				.text(indexedText)
+				.metadata(Map.of("sourceType", sourceType, "sourceId", sourceId.toString()))
+				.build();
 		this.knowledgeVectorStore.add(document);
 
 		KnowledgeChunk chunk;
@@ -139,9 +140,9 @@ public class KnowledgeVectorIndexer {
 
 	private static String toIndexedText(Claim claim) {
 		String skillNames = claim.getSkills().stream()
-			.map(Skill::getName)
-			.sorted(String.CASE_INSENSITIVE_ORDER)
-			.collect(Collectors.joining(", "));
+				.map(Skill::getName)
+				.sorted(String.CASE_INSENSITIVE_ORDER)
+				.collect(Collectors.joining(", "));
 		String title = skillNames.isBlank() ? "none" : skillNames;
 		return "title: %s | text: %s".formatted(title, claim.getContent());
 	}
@@ -187,8 +188,7 @@ public class KnowledgeVectorIndexer {
 			byte[] bytes = MessageDigest.getInstance("SHA-256")
 					.digest((model + "\n" + indexedText).getBytes(StandardCharsets.UTF_8));
 			return HexFormat.of().formatHex(bytes);
-		}
-		catch (NoSuchAlgorithmException exception) {
+		} catch (NoSuchAlgorithmException exception) {
 			throw new IllegalStateException("SHA-256 está indisponível.", exception);
 		}
 	}
