@@ -124,8 +124,7 @@ func applySchemaFormats(schema *jsonschema.Schema, typ reflect.Type) {
 
 	switch typ.Kind() {
 	case reflect.Struct:
-		for i := range typ.NumField() {
-			field := typ.Field(i)
+		for field := range typ.Fields() {
 			if !field.IsExported() {
 				continue
 			}
@@ -169,7 +168,7 @@ func fieldFormat(field reflect.StructField) (format string, each bool) {
 		return format, false
 	}
 
-	for _, rule := range strings.Split(field.Tag.Get("validate"), ",") {
+	for rule := range strings.SplitSeq(field.Tag.Get("validate"), ",") {
 		switch rule {
 		case "dive":
 			each = true
