@@ -1,0 +1,14 @@
+package mcpcontroller
+
+import (
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/wskr00/dianysma/src/knowledge/service"
+)
+
+func registerClaim(server *mcp.Server, services *service.Services) {
+	addTool(server, &mcp.Tool{Name: "get_claim", Description: "Busca um fato profissional pelo UUID. Consulte-o antes de atualizar se precisar confirmar o conteúdo ou os vínculos atuais.", Annotations: &mcp.ToolAnnotations{Title: "Consultar fato profissional", ReadOnlyHint: true, DestructiveHint: new(false), IdempotentHint: true, OpenWorldHint: new(false)}}, services.Claim.Get)
+	addTool(server, &mcp.Tool{Name: "list_claims", Description: "Lista fatos profissionais do mais recentemente atualizado ao mais antigo. A resposta contém a coleção `claims`. Informe `participationId` para filtrar por participação; omita para incluir fatos associados e autônomos.", Annotations: &mcp.ToolAnnotations{Title: "Listar fatos profissionais", ReadOnlyHint: true, DestructiveHint: new(false), IdempotentHint: true, OpenWorldHint: new(false)}}, services.Claim.List)
+	addTool(server, &mcp.Tool{Name: "create_claim", Description: "Cria um fato profissional específico e confirmado, como uma entrega, responsabilidade ou resultado. Antes de criar, use `search_knowledge` para procurar fatos semelhantes; a busca retorna apenas os resultados mais relevantes, então a ausência de resultados não garante que o fato não esteja cadastrado. Informe apenas IDs existentes; use `search_skills` para encontrar competências. Cada chamada cria um novo registro e retorna seu UUID.", Annotations: &mcp.ToolAnnotations{Title: "Criar fato profissional", ReadOnlyHint: false, DestructiveHint: new(false), IdempotentHint: false, OpenWorldHint: new(false)}}, services.Claim.Create)
+	addTool(server, &mcp.Tool{Name: "update_claim", Description: "Substitui o conteúdo completo de um fato profissional. Consulte `get_claim` antes se precisar preservar dados atuais. Os vínculos são mantidos quando seus parâmetros são omitidos ou null: informe `participationId` para associar, `clearParticipation=true` para desassociar, e `skillIds` para substituir as competências (`[]` remove todas). Não combine `participationId` com `clearParticipation=true`.", Annotations: &mcp.ToolAnnotations{Title: "Atualizar fato profissional", ReadOnlyHint: false, DestructiveHint: new(true), IdempotentHint: true, OpenWorldHint: new(false)}}, services.Claim.Update)
+	addTool(server, &mcp.Tool{Name: "delete_claim", Description: "Exclui permanentemente o fato profissional e remove seu índice de busca semântica. Se o UUID não existir, retorna `deleted=false` sem alterar outros registros.", Annotations: &mcp.ToolAnnotations{Title: "Excluir fato profissional", ReadOnlyHint: false, DestructiveHint: new(true), IdempotentHint: true, OpenWorldHint: new(false)}}, services.Claim.Delete)
+}

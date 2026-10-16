@@ -1,5 +1,7 @@
 # Dianysma — arquitetura
 
+> **Adaptação para Go em revisão:** a implementação em `cmd/` e `internal/` preserva os contratos MCP e o domínio descritos neste documento. Consulte [`go-backend.md`](go-backend.md) para a stack, execução e configuração Go e [`go-migration-plan.md`](go-migration-plan.md) para o plano. Os detalhes de Spring, JPA e Flyway abaixo continuam como referência da implementação Java preservada; a pipeline ainda não foi trocada.
+
 **Versão:** 2.0 · **Data:** 12/10/2026<br>
 **Direção:** servidor MCP privado de conhecimento profissional, acompanhado pela skill local `dianysma`.<br>
 **Estado:** arquitetura em implementação; detalhes de domínio e infraestrutura ainda podem mudar.

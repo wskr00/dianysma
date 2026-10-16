@@ -6,8 +6,12 @@ on:
       - main
     paths:
       - "src/**"
-      - "build.gradle"
+      - "main.go"
+      - "go.mod"
+      - "go.sum"
+      - "VERSION"
       - "Dockerfile"
+      - ".golangci.yml"
 
 permissions: {}
 
@@ -29,14 +33,36 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Java 25
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          distribution: temurin
-          java-version: "25"
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - name: Check Go formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(main.go)
+          while IFS= read -r -d '' file; do
+            files+=("$file")
+          done < <(find src -type f -name '*.go' -print0)
 
-      - name: Run verification checks
-        run: ./gradlew --no-daemon check
+          unformatted="$(gofmt -l "${files[@]}")"
+          if [[ -n "$unformatted" ]]; then
+            printf 'These Go files need gofmt:\n%s\n' "$unformatted" >&2
+            exit 1
+          fi
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@d583c34f0599d37dbac4a198b9c83201be380893 # v9.3.0
+        env:
+          GOFLAGS: -tags=integration
+        with:
+          version: v2.14.0
+
+      - name: Run tests
+        run: go test -count=1 -tags=integration ./...
+
+      - name: Build
+        run: go build ./...

@@ -50,9 +50,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          version="$(./gradlew --no-daemon -q properties | awk '$1 == "version:" { version = $2 } END { print version }')"
-          if [[ -z "$version" ]]; then
-            echo "Could not read the project version from build.gradle" >&2
+          version="$(< VERSION)"
+          if [[ ! "$version" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]*$ ]]; then
+            echo "VERSION must contain a valid image-tag version" >&2
+            exit 1
+          fi
+
+          if [[ ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "The source commit SHA is invalid" >&2
             exit 1
           fi
 
@@ -94,5 +99,6 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.image.outputs.tag }}
+          build-args: APP_VERSION=${{ steps.image.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

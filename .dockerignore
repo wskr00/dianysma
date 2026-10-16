@@ -1,11 +1,7 @@
 **
 !Dockerfile
-!build.gradle
-!settings.gradle
-!gradlew
-!gradle/
-!gradle/wrapper/
-!gradle/wrapper/**
+!go.mod
+!go.sum
+!main.go
 !src/
-!src/main/
-!src/main/**
+!src/**

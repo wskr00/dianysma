@@ -1,42 +1,30 @@
-FROM --platform=linux/arm64 ghcr.io/graalvm/native-image-community:25i4-25.0.4.1.1-ol9-20260922 AS native-build
+# syntax=docker/dockerfile:1
+
+FROM --platform=$BUILDPLATFORM golang:1.27.2-trixie AS build
 
 WORKDIR /workspace
 
-ENV GRADLE_USER_HOME=/tmp/gradle-user-home
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
-COPY --chmod=0755 gradlew ./gradlew
-COPY gradle ./gradle
-COPY build.gradle settings.gradle ./
-COPY src/main ./src/main
+COPY main.go ./main.go
+COPY src ./src
 
-RUN --mount=type=cache,target=/tmp/gradle-user-home \
-	./gradlew --no-daemon --build-cache nativeCompile && \
-	cp -L /usr/lib64/libz.so.1 /tmp/libz.so.1
+ARG TARGETOS
+ARG TARGETARCH
+ARG APP_VERSION
+RUN --mount=type=cache,target=/go/pkg/mod \
+	--mount=type=cache,target=/root/.cache/go-build \
+	test -n "$APP_VERSION" && \
+	CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+	go build -trimpath -ldflags="-s -w -X main.version=$APP_VERSION" -o /out/dianysma .
 
-FROM debian:trixie-slim AS runtime
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        ca-certificates \
-        bash \
-        iproute2 \
-        tcpdump \
-        libcap2-bin \
-        procps \
-        strace \
-    && rm -rf /var/lib/apt/lists/*
+FROM dhi.io/static:20250419-debian13 AS runtime
 
 WORKDIR /app
 
-COPY --from=native-build --chmod=0555 \
-    /workspace/build/native/nativeCompile/dianysma \
-    /app/dianysma
-
-COPY --from=native-build --chmod=0444 \
-    /tmp/libz.so.1 /usr/lib/libz.so.1
+COPY --from=build --chmod=0555 /out/dianysma /app/dianysma
 
 EXPOSE 8000
-
 USER 65532:65532
-
 ENTRYPOINT ["/app/dianysma"]
